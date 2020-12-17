@@ -5,10 +5,10 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"gitlab.unanet.io/devops/go/pkg/log"
 	"go.uber.org/zap"
 
 	"gitlab.unanet.io/devops/go/pkg/errors"
-	"gitlab.unanet.io/devops/go/pkg/log"
 )
 
 // JSONText is a json.RawMessage, which is a []byte underneath.

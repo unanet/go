@@ -22,7 +22,7 @@ var (
 )
 
 type Config struct {
-	LogLevel    string `split_words:"true" default:"info"`
+	LogLevel string `split_words:"true" default:"info"`
 }
 
 func logLevel(cfgLevel string) zap.AtomicLevel {

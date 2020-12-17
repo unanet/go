@@ -16,16 +16,25 @@ func ParseBody(r *http.Request, model interface{}) error {
 	decoder.DisallowUnknownFields()
 	if err := decoder.Decode(model); err != nil {
 		if err.Error() == "EOF" {
-			return errors.NewRestError(400, "Missing POST Body")
+			return &errors.RestError{
+				Code:    400,
+				Message: fmt.Sprintf("Missing POST Body"),
+			}
 		} else {
-			return errors.NewRestError(400, "Invalid Post Body: %s", err)
+			return &errors.RestError{
+				Code:    400,
+				Message: fmt.Sprintf("Invalid Post Body: %s", err),
+			}
 		}
 	}
 
 	if err := validation.ValidateWithContext(r.Context(), model); err != nil {
 		switch err := err.(type) {
 		case validation.Errors:
-			return errors.NewRestError(400, err.Error())
+			return &errors.RestError{
+				Code:    400,
+				Message: err.Error(),
+			}
 		default:
 			return fmt.Errorf("unexpected validation error: %w", err)
 		}
