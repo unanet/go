@@ -13,8 +13,5 @@ require (
 	github.com/prometheus/client_golang v1.9.0
 	github.com/satori/go.uuid v1.2.0
 	go.uber.org/zap v1.16.0
-	k8s.io/api v0.20.0 // indirect
-	k8s.io/client-go v11.0.0+incompatible
-	k8s.io/klog v1.0.0 // indirect
-	k8s.io/utils v0.0.0-20201110183641-67b214c5f920 // indirect
+	k8s.io/client-go v0.18.2
 )
