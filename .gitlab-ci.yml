@@ -1,0 +1,11 @@
+stages:
+  - test
+
+Test:
+  stage: test
+  script:
+    - make test
+  tags:
+    - linux
+  except:
+    - tags
