@@ -26,6 +26,7 @@ type Config struct {
 }
 
 func logLevel(cfgLevel string) zap.AtomicLevel {
+	cfgLevel = strings.ToLower(cfgLevel)
 	var atomicLevel zap.AtomicLevel
 	switch cfgLevel {
 	case "debug":
@@ -42,6 +43,26 @@ func logLevel(cfgLevel string) zap.AtomicLevel {
 		atomicLevel = zap.NewAtomicLevelAt(zap.InfoLevel)
 	}
 	return atomicLevel
+}
+
+func Level(level string) zapcore.Level {
+	level = strings.ToLower(level)
+	var coreLevel zapcore.Level
+	switch level {
+	case "debug":
+		coreLevel = zapcore.DebugLevel
+	case "info":
+		coreLevel = zapcore.InfoLevel
+	case "error", "err":
+		coreLevel = zapcore.ErrorLevel
+	case "fatal":
+		coreLevel = zapcore.FatalLevel
+	case "panic":
+		coreLevel = zapcore.PanicLevel
+	default:
+		coreLevel = zapcore.InfoLevel
+	}
+	return coreLevel
 }
 
 func newLogger(ll string) *zap.Logger {
