@@ -25,7 +25,7 @@ type Config struct {
 	LogLevel string `split_words:"true" default:"info"`
 }
 
-func logLevel(cfgLevel string) zap.AtomicLevel {
+func Level(cfgLevel string) zap.AtomicLevel {
 	var atomicLevel zap.AtomicLevel
 	switch cfgLevel {
 	case "debug":
@@ -46,7 +46,7 @@ func logLevel(cfgLevel string) zap.AtomicLevel {
 
 func newLogger(ll string) *zap.Logger {
 	cfg := zap.Config{
-		Level:            logLevel(strings.ToLower(ll)),
+		Level:            Level(strings.ToLower(ll)),
 		Encoding:         "json",
 		DisableCaller:    true,
 		OutputPaths:      []string{"stdout"},
