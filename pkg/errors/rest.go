@@ -10,6 +10,8 @@ var ErrExpired = NewRestError(401,"Expired")
 
 var ErrUnauthorized = NewRestError(401,"UnAuthorized")
 
+var ErrNotFound = NewRestError(404,"NotFound")
+
 
 // RestError represents a Rest HTTP Error that can be returned from a controller
 type RestError struct {
