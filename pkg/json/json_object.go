@@ -4,22 +4,17 @@ import (
 	"database/sql/driver"
 	"encoding/json"
 	"fmt"
-
-	"gitlab.unanet.io/devops/go/pkg/log"
-	"go.uber.org/zap"
-
-	"gitlab.unanet.io/devops/go/pkg/errors"
 )
 
 // JSONText is a json.RawMessage, which is a []byte underneath.
 // Value() validates the json format in the source, and returns an error if
 // the json is not valid.  Scan does no validation.  JSONText additionally
 // implements `Unmarshal`, which unmarshals the json within to an interface{}
-type Text json.RawMessage
+type Object json.RawMessage
 
-var EmptyJSONText = Text("{}")
+var EmptyJSONObject = Object("{}")
 
-func StructToJson(v interface{}) (Text, error) {
+func StructToJsonObject(v interface{}) (Object, error) {
 	j, err := json.Marshal(v)
 	if err != nil {
 		return nil, err
@@ -29,17 +24,17 @@ func StructToJson(v interface{}) (Text, error) {
 }
 
 // MarshalJSON returns the *j as the JSON encoding of j.
-func (j Text) MarshalJSON() ([]byte, error) {
+func (j Object) MarshalJSON() ([]byte, error) {
 	if len(j) == 0 {
-		return EmptyJSONText, nil
+		return EmptyJSONObject, nil
 	}
 	return j, nil
 }
 
 // UnmarshalJSON sets *j to a copy of Repo
-func (j *Text) UnmarshalJSON(data []byte) error {
+func (j *Object) UnmarshalJSON(data []byte) error {
 	if j == nil {
-		return fmt.Errorf("JSONText: UnmarshalJSON on nil pointer")
+		return fmt.Errorf("json.Object: UnmarshalJSON on nil pointer")
 	}
 	*j = append((*j)[0:0], data...)
 	return nil
@@ -47,7 +42,7 @@ func (j *Text) UnmarshalJSON(data []byte) error {
 
 // Value returns j as a value.  This does a validating unmarshal into another
 // RawMessage.  If j is invalid json, it returns an error.
-func (j Text) Value() (driver.Value, error) {
+func (j Object) Value() (driver.Value, error) {
 	var m json.RawMessage
 	var err = j.Unmarshal(&m)
 	if err != nil {
@@ -57,77 +52,57 @@ func (j Text) Value() (driver.Value, error) {
 }
 
 // Scan stores the src in *j.  No validation is done.
-func (j *Text) Scan(src interface{}) error {
+func (j *Object) Scan(src interface{}) error {
 	var source []byte
 	switch t := src.(type) {
 	case string:
 		source = []byte(t)
 	case []byte:
 		if len(t) == 0 {
-			source = EmptyJSONText
+			source = EmptyJSONObject
 		} else {
 			source = t
 		}
 	case nil:
-		*j = EmptyJSONText
+		*j = EmptyJSONObject
 	default:
-		return fmt.Errorf("incompatible type for JSONText")
+		return fmt.Errorf("incompatible type for json.Object")
 	}
 	*j = append((*j)[0:0], source...)
 	return nil
 }
 
 // Unmarshal unmarshal's the json in j to v, as in json.Unmarshal.
-func (j *Text) Unmarshal(v interface{}) error {
+func (j *Object) Unmarshal(v interface{}) error {
 	if len(*j) == 0 {
-		*j = EmptyJSONText
+		*j = EmptyJSONObject
 	}
 	return json.Unmarshal(*j, v)
 }
 
-func (j *Text) AsMap() map[string]interface{} {
+func (j *Object) AsMap() (map[string]interface{}, error) {
 	hash := make(map[string]interface{})
 	err := j.Unmarshal(&hash)
 	if err != nil {
-		log.Logger.Error("failed to unmarshal the json.Text as a map", zap.Error(errors.Wrap(err)))
+		return nil, err
 	}
-	return hash
-}
-
-func (j *Text) AsList() []string {
-	list := make([]string, 0)
-	err := j.Unmarshal(&list)
-	if err != nil {
-		log.Logger.Error("failed to unmarshal the json.Text as a slice", zap.Error(errors.Wrap(err)))
-	}
-	return list
+	return hash, nil
 }
 
 // String supports pretty printing for JSONText types.
-func (j Text) String() string {
+func (j Object) String() string {
 	return string(j)
 }
 
-func FromMap(m map[string]interface{}) Text {
+func FromMap(m map[string]interface{}) (Object, error) {
 	if m == nil {
 		m = map[string]interface{}{}
 	}
 
 	b, err := json.Marshal(m)
 	if err != nil {
-		log.Logger.Error("failed to marshal the map as json.Text", zap.Error(errors.Wrap(err)))
+		return nil, err
 	}
-	return b
+	return b, nil
 }
 
-func FromList(l []string) Text {
-	if l == nil {
-		l = []string{}
-	}
-
-	b, err := json.Marshal(l)
-	if err != nil {
-		log.Logger.Error("failed to marshal the slice as json.Text", zap.Error(errors.Wrap(err)))
-	}
-	return b
-}
