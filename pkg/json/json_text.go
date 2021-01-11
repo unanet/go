@@ -89,9 +89,18 @@ func (j *Text) AsMap() map[string]interface{} {
 	hash := make(map[string]interface{})
 	err := j.Unmarshal(&hash)
 	if err != nil {
-		log.Logger.Error("failed to unmarshal the metadata as a map", zap.Error(errors.Wrap(err)))
+		log.Logger.Error("failed to unmarshal the json.Text as a map", zap.Error(errors.Wrap(err)))
 	}
 	return hash
+}
+
+func (j *Text) AsList() []string {
+	list := make([]string, 0)
+	err := j.Unmarshal(&list)
+	if err != nil {
+		log.Logger.Error("failed to unmarshal the json.Text as a slice", zap.Error(errors.Wrap(err)))
+	}
+	return list
 }
 
 // String supports pretty printing for JSONText types.
@@ -100,9 +109,25 @@ func (j Text) String() string {
 }
 
 func FromMap(m map[string]interface{}) Text {
+	if m == nil {
+		m = map[string]interface{}{}
+	}
+
 	b, err := json.Marshal(m)
 	if err != nil {
-		log.Logger.Error("failed to marshal the map as metadata", zap.Error(errors.Wrap(err)))
+		log.Logger.Error("failed to marshal the map as json.Text", zap.Error(errors.Wrap(err)))
+	}
+	return b
+}
+
+func FromList(l []string) Text {
+	if l == nil {
+		l = []string{}
+	}
+
+	b, err := json.Marshal(l)
+	if err != nil {
+		log.Logger.Error("failed to marshal the slice as json.Text", zap.Error(errors.Wrap(err)))
 	}
 	return b
 }
