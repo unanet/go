@@ -96,7 +96,7 @@ func (j List) String() string {
 	return string(j)
 }
 
-func FromList(l []string) (Object, error) {
+func FromList(l []string) (List, error) {
 	if l == nil {
 		l = []string{}
 	}
