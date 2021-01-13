@@ -15,7 +15,7 @@ type unanetError interface {
 	IsUnanetError() bool
 }
 
-func Wrap(err error) error {
+func Wrap(err error, args ...interface{}) error {
 	if err == nil {
 		return nil
 	}
@@ -24,7 +24,13 @@ func Wrap(err error) error {
 	} else if _, ok := err.(cause); ok {
 		return err
 	} else {
-		return errors.Wrap(err, err.Error())
+		if len(args) == 0 {
+			return errors.Wrap(err, err.Error())
+		} else if len(args) == 1  {
+			return errors.Wrap(err, fmt.Sprintf("%v", args[0]))
+		} else {
+			return errors.Wrap(err, fmt.Sprintf(fmt.Sprintf("%v", args[0]), args[1:]...))
+		}
 	}
 }
 
