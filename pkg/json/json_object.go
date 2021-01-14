@@ -89,6 +89,13 @@ func (j *Object) AsMap() (map[string]interface{}, error) {
 	return hash, nil
 }
 
+// AsMapOrEmpty is Deprecated, you should use AsMap instead and handle the error
+func (j *Object) AsMapOrEmpty() map[string]interface{} {
+	hash := make(map[string]interface{})
+	j.Unmarshal(&hash)
+	return hash
+}
+
 // String supports pretty printing for JSONText types.
 func (j Object) String() string {
 	return string(j)
