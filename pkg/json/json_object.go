@@ -89,11 +89,14 @@ func (j *Object) AsMap() (map[string]interface{}, error) {
 	return hash, nil
 }
 
-// AsMapOrEmpty is Deprecated, you should use AsMap instead and handle the error
+// AsMapOrEmpty returns a map or if it can't unmarshal it, it returns an empty map
 func (j *Object) AsMapOrEmpty() map[string]interface{} {
-	hash := make(map[string]interface{})
-	j.Unmarshal(&hash)
-	return hash
+	m, err := j.AsMap()
+	if err != nil {
+		return map[string]interface{}{}
+	} else {
+		return m
+	}
 }
 
 // String supports pretty printing for JSONText types.
@@ -113,3 +116,10 @@ func FromMap(m map[string]interface{}) (Object, error) {
 	return b, nil
 }
 
+func FromMapOrEmpty(m map[string]interface{}) Object {
+	b, err := json.Marshal(m)
+	if err != nil {
+		return EmptyJSONObject
+	}
+	return b
+}
