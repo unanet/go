@@ -1,27 +1,74 @@
 package middleware
 
 import (
-"context"
-"fmt"
+	"bytes"
+	"context"
+	"crypto/sha256"
+	"encoding/base64"
+	"encoding/json"
+	"fmt"
+	"io"
+	"io/ioutil"
 	"net/http"
-"time"
+	"strings"
+	"time"
 
-"gitlab.unanet.io/devops/go/pkg/log"
+	"github.com/go-chi/chi/middleware"
+	"go.uber.org/zap"
 
-"github.com/go-chi/chi/middleware"
-
-"go.uber.org/zap"
+	"gitlab.unanet.io/devops/go/pkg/log"
 )
+
+type LogWriter interface {
+	Write(status, bytes int, header http.Header, elapsed time.Duration, body io.Reader)
+	Panic(v interface{}, stack []byte)
+}
+
+type LogConstructor interface {
+	NewLogWriter(r *http.Request) LogWriter
+}
 
 type LogEntry struct {
 	logger *zap.Logger
 }
 
-func (l *LogEntry) Write(status, bytes int, header http.Header, elapsed time.Duration, extra interface{}) {
-	l.logger.Info("Outgoing HTTP Response",
+func WithLogEntry(r *http.Request, entry LogWriter) *http.Request {
+	r = r.WithContext(context.WithValue(r.Context(), middleware.LogEntryCtxKey, entry))
+	return r
+}
+
+func RequestLogger(f LogConstructor) func(next http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		fn := func(w http.ResponseWriter, r *http.Request) {
+			entry := f.NewLogWriter(r)
+			ww := middleware.NewWrapResponseWriter(w, r.ProtoMajor)
+
+			t1 := time.Now()
+			buffer := bytes.NewBuffer([]byte{})
+			ww.Tee(buffer)
+			defer func() {
+				entry.Write(ww.Status(), ww.BytesWritten(), ww.Header(), time.Since(t1), ioutil.NopCloser(buffer))
+			}()
+
+			next.ServeHTTP(ww, WithLogEntry(r, entry))
+		}
+		return http.HandlerFunc(fn)
+	}
+}
+
+func (l *LogEntry) Write(status, bytes int, header http.Header, elapsed time.Duration, body io.Reader) {
+	outgoingResponseFields := []zap.Field{
 		zap.Int("status", status),
 		zap.Int("resp_bytes_length", bytes),
-		zap.Float64("elapsed_ms", float64(elapsed.Nanoseconds())/1000000.0))
+		zap.Float64("elapsed_ms", float64(elapsed.Nanoseconds())/1000000.0),
+	}
+
+	if l.logger.Core().Enabled(zap.DebugLevel) {
+		outgoingResponseFields = append(outgoingResponseFields, decodeHeader(header))
+		outgoingResponseFields = append(outgoingResponseFields, decodeBody(body))
+	}
+
+	l.logger.With(outgoingResponseFields...).Info("Outgoing HTTP Response")
 }
 
 func (l *LogEntry) Panic(v interface{}, stack []byte) {
@@ -30,14 +77,14 @@ func (l *LogEntry) Panic(v interface{}, stack []byte) {
 }
 
 func Logger() func(next http.Handler) http.Handler {
-	return middleware.RequestLogger(&LogEntryConstructor{log.Logger})
+	return RequestLogger(&LogWriterConstructor{log.Logger})
 }
 
-type LogEntryConstructor struct {
+type LogWriterConstructor struct {
 	logger *zap.Logger
 }
 
-func (l *LogEntryConstructor) NewLogEntry(r *http.Request) middleware.LogEntry {
+func (l *LogWriterConstructor) NewLogWriter(r *http.Request) LogWriter {
 	logFields := []zap.Field{
 		zap.String("user_agent", r.UserAgent()),
 	}
@@ -46,6 +93,15 @@ func (l *LogEntryConstructor) NewLogEntry(r *http.Request) middleware.LogEntry {
 		zap.String("remote_addr", r.RemoteAddr),
 		zap.String("uri", r.RequestURI),
 		zap.String("method", r.Method),
+	}
+
+	if l.logger.Core().Enabled(zap.DebugLevel) {
+		buf, bodyErr := ioutil.ReadAll(r.Body)
+		if bodyErr != nil {
+			incomingRequestFields = append(incomingRequestFields, zap.Error(bodyErr))
+		}
+		incomingRequestFields = append(incomingRequestFields, decodeBody(ioutil.NopCloser(bytes.NewBuffer(buf))))
+		incomingRequestFields = append(incomingRequestFields, decodeHeader(r.Header))
 	}
 
 	if reqID := GetReqID(r.Context()); reqID != "" {
@@ -76,4 +132,33 @@ func Log(ctx context.Context) *zap.Logger {
 	} else {
 		return log.Logger
 	}
+}
+
+func decodeBody(r io.Reader) zap.Field {
+	bodyBytes, err := ioutil.ReadAll(r)
+	if err != nil {
+		return zap.Error(err)
+	}
+	var b interface{}
+	err = json.Unmarshal(bodyBytes, &b)
+	if err == nil {
+		return zap.Any("body", b)
+	}
+
+	return zap.String("body", string(bodyBytes))
+}
+
+func decodeHeader(h http.Header) zap.Field {
+	headers := map[string]string{}
+	for k, v := range h {
+		if strings.ToLower(k) == "authorization" {
+			hash := sha256.New()
+			hash.Write([]byte(strings.Join(v, "|")))
+			headers[k] = base64.URLEncoding.EncodeToString(hash.Sum(nil))
+		} else {
+			headers[k] = strings.Join(v, "|")
+		}
+	}
+
+	return zap.Any("headers", headers)
 }

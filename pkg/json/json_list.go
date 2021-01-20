@@ -80,8 +80,6 @@ func (j *List) Unmarshal(v interface{}) error {
 	return json.Unmarshal(*j, v)
 }
 
-
-
 func (j *List) AsList() ([]string, error) {
 	list := make([]string, 0)
 	err := j.Unmarshal(&list)
