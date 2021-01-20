@@ -13,7 +13,7 @@ import (
 func init() {
 	render.Respond = func(w http.ResponseWriter, r *http.Request, v interface{}) {
 		if err, ok := v.(error); ok {
-			var restError *errors.RestError
+			var restError errors.RestError
 			if goErrors.As(err, &restError) {
 				render.Status(r, restError.Code)
 				LogFromRequest(r).Debug("Known Internal Server Error", zap.Error(err))
@@ -22,7 +22,7 @@ func init() {
 			}
 
 			render.Status(r, 500)
-			internalServerError := &errors.RestError{Code: http.StatusInternalServerError, Message: "Internal Server Error", OriginalError: err}
+			internalServerError := errors.RestError{Code: http.StatusInternalServerError, Message: "Internal Server Error", OriginalError: err}
 			LogFromRequest(r).Error("Unknown Internal Server Error", zap.Error(err))
 			render.DefaultResponder(w, r, internalServerError)
 			return

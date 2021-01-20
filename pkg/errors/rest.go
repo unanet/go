@@ -22,7 +22,7 @@ func (re RestError) Error() string {
 	return re.Message
 }
 
-func (re *RestError) IsUnanetError() bool {
+func (re RestError) IsUnanetError() bool {
 	return true
 }
 
@@ -31,46 +31,46 @@ type UnexpectStatusCodeError struct {
 	OriginalError  error
 }
 
-func (e *UnexpectStatusCodeError) Error() string {
+func (e UnexpectStatusCodeError) Error() string {
 	return fmt.Sprintf("The following Exit Code: %d, was unexpected", e.UnexpectedCode)
 }
 
-func (re *RestError) Unwrap() error {
+func (re RestError) Unwrap() error {
 	return re.OriginalError
 }
 
-func NewRestError(code int, format string, a ...interface{}) *RestError {
-	return &RestError{
+func NewRestError(code int, format string, a ...interface{}) RestError {
+	return RestError{
 		Code:          code,
 		Message:       fmt.Sprintf(format, a...),
 		OriginalError: nil,
 	}
 }
 
-func NotFoundf(format string, a ...interface{}) *RestError {
+func NotFoundf(format string, a ...interface{}) RestError {
 	return NotFound(fmt.Sprintf(format, a...))
 }
 
-func NotFound(message string) *RestError {
-	return &RestError{
+func NotFound(message string) RestError {
+	return RestError{
 		Code:    http.StatusNotFound,
 		Message: message,
 	}
 }
 
-func BadRequestf(format string, a ...interface{}) *RestError {
+func BadRequestf(format string, a ...interface{}) RestError {
 	return BadRequest(fmt.Sprintf(format, a...))
 }
 
-func BadRequest(message string) *RestError {
-	return &RestError{
+func BadRequest(message string) RestError {
+	return RestError{
 		Code:    http.StatusBadRequest,
 		Message: message,
 	}
 }
 
-func UnexpectedStatusCode(status int, err error) *UnexpectStatusCodeError {
-	return &UnexpectStatusCodeError{
+func UnexpectedStatusCode(status int, err error) UnexpectStatusCodeError {
+	return UnexpectStatusCodeError{
 		UnexpectedCode: status,
 		OriginalError:  err,
 	}
