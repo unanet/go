@@ -1,15 +1,14 @@
 package http
 
 import (
+	"bytes"
 	"context"
+	"io/ioutil"
 	"net/http"
-	"time"
 
 	"go.uber.org/zap"
 
-	uuid "github.com/satori/go.uuid"
-
-	"gitlab.unanet.io/devops/go/pkg/middleware"
+	"gitlab.unanet.io/devops/go/pkg/log"
 )
 
 // Transport implements http.RoundTripper. When set as Transport of http.Client, it executes HTTP requests with logging.
@@ -33,47 +32,65 @@ var DefaultLogRequest = func(req *http.Request) {
 		zap.String("method", req.Method),
 		zap.String("url", req.URL.String()),
 	}
-	if cv, ok := ctx.Value(ContextKeyRequestStart).(*contextValue); ok {
-		fields = append(fields, zap.String("context_id", cv.contextID))
+
+	if reqID := log.GetReqID(ctx); len(reqID) > 0 {
+		fields = append(fields, zap.String("req_id", reqID))
 	}
-	middleware.LogFromRequest(req).Info("Outgoing HTTP Request", fields...)
+
+	l := log.Logger
+	if l.Core().Enabled(zap.DebugLevel) {
+		buf, bodyErr := ioutil.ReadAll(req.Body)
+		if bodyErr != nil {
+			fields = append(fields, zap.Error(bodyErr))
+		} else {
+			req.Body = ioutil.NopCloser(bytes.NewBuffer(buf))
+			fields = append(fields, log.DecodeBody(ioutil.NopCloser(bytes.NewBuffer(buf))))
+			fields = append(fields, log.DecodeHeader(req.Header))
+		}
+	}
+
+	l.Info("Outgoing HTTP Request", fields...)
 }
 
 // Used if transport.LogResponse is not set.
 var DefaultLogResponse = func(resp *http.Response) {
 	ctx := resp.Request.Context()
-	logger := middleware.LogFromRequest(resp.Request)
+	l := log.Logger
 	fields := []zap.Field{
 		zap.Int("status", resp.StatusCode),
 		zap.String("uri", resp.Request.URL.String()),
 		zap.String("host", resp.Request.Host),
 	}
-	if cv, ok := ctx.Value(ContextKeyRequestStart).(*contextValue); ok {
-		elapsed := float64(time.Since(cv.start).Nanoseconds()) / 1000000.0
-		fields = append(fields, zap.Float64("elapsed_ms", elapsed), zap.String("context_id", cv.contextID))
+
+	if reqID := log.GetReqID(ctx); len(reqID) > 0 {
+		fields = append(fields, zap.String("req_id", reqID))
 	}
-	logger.Info("Incoming HTTP Response", fields...)
-}
 
-type contextKey struct {
-	name string
-}
+	if l.Core().Enabled(zap.DebugLevel) {
+		buf, bodyErr := ioutil.ReadAll(resp.Body)
+		if bodyErr != nil {
+			fields = append(fields, zap.Error(bodyErr))
+		} else {
+			resp.Body = ioutil.NopCloser(bytes.NewBuffer(buf))
+			fields = append(fields, log.DecodeBody(ioutil.NopCloser(bytes.NewBuffer(buf))))
+			fields = append(fields, log.DecodeHeader(resp.Header))
+		}
+	}
 
-type contextValue struct {
-	start     time.Time
-	contextID string
+	l.Info("Incoming HTTP Response", fields...)
 }
-
-var ContextKeyRequestStart = &contextKey{"RequestStart"}
 
 // RoundTrip is the core part of this module and implements http.RoundTripper.
 // Executes HTTP request with request/response logging.
 func (t *Transport) RoundTrip(req *http.Request) (*http.Response, error) {
-	ctx := context.WithValue(req.Context(), ContextKeyRequestStart, &contextValue{
-		start:     time.Now(),
-		contextID: uuid.NewV4().String(),
-	})
-	req = req.WithContext(ctx)
+	ctx := req.Context()
+	reqID := log.GetReqID(ctx)
+
+	if len(reqID) == 0 {
+		reqID = log.GetNextRequestID()
+		req = req.WithContext(context.WithValue(ctx, log.RequestIDKey, reqID))
+	}
+	req.Header.Add(log.RequestIDHeader, reqID)
 
 	t.logRequest(req)
 	resp, err := t.transport().RoundTrip(req)

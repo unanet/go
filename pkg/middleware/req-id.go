@@ -7,18 +7,24 @@ import (
 	"context"
 	"net/http"
 
-	uuid "github.com/satori/go.uuid"
+	"gitlab.unanet.io/devops/go/pkg/log"
 )
 
-// Key to use when setting the request ID.
-type ctxKeyRequestID int
-
-// RequestIDKey is the key that holds the unique request ID in a request context.
-const RequestIDKey ctxKeyRequestID = 0
-
-// RequestIDHeader is the name of the HTTP Header which contains the request id.
-// Exported so that it can be changed by developers
-var RequestIDHeader = "X-Request-Id"
+// A quick note on the statistics here: we're trying to calculate the chance that
+// two randomly generated base62 prefixes will collide. We use the formula from
+// http://en.wikipedia.org/wiki/Birthday_problem
+//
+// P[m, n] \approx 1 - e^{-m^2/2n}
+//
+// We ballpark an upper bound for $m$ by imagining (for whatever reason) a server
+// that restarts every second over 10 years, for $m = 86400 * 365 * 10 = 315360000$
+//
+// For a $k$ character base-62 identifier, we have $n(k) = 62^k$
+//
+// Plugging this in, we find $P[m, n(10)] \approx 5.75%$, which is good enough for
+// our purposes, and is surely more than anyone would ever need in practice -- a
+// process that is rebooted a handful of times a day for a hundred years has less
+// than a millionth of a percent chance of generating two colliding IDs.
 
 // RequestID is a middleware that injects a request ID into the context of each
 // request. A request ID is a string of the form "host.example.com/random-0001",
@@ -28,25 +34,12 @@ var RequestIDHeader = "X-Request-Id"
 func RequestID(next http.Handler) http.Handler {
 	fn := func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
-		requestID := r.Header.Get(RequestIDHeader)
-		if uuid.FromStringOrNil(requestID) == uuid.Nil {
-			requestID = uuid.NewV4().String()
+		requestID := r.Header.Get(log.RequestIDHeader)
+		if requestID == "" {
+			requestID = log.GetNextRequestID()
 		}
-		ctx = context.WithValue(ctx, RequestIDKey, requestID)
+		ctx = context.WithValue(ctx, log.RequestIDKey, requestID)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	}
 	return http.HandlerFunc(fn)
-}
-
-// GetReqID returns a request ID from the given context if one is present.
-// Returns the empty string if a request ID cannot be found.
-func GetReqID(ctx context.Context) string {
-	if ctx == nil {
-		return uuid.NewV4().String()
-	}
-	if reqID, ok := ctx.Value(RequestIDKey).(string); ok {
-		return reqID
-	}
-
-	return uuid.NewV4().String()
 }

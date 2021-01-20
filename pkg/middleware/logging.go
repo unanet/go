@@ -3,14 +3,10 @@ package middleware
 import (
 	"bytes"
 	"context"
-	"crypto/sha256"
-	"encoding/base64"
-	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
-	"strings"
 	"time"
 
 	"github.com/go-chi/chi/middleware"
@@ -42,7 +38,7 @@ func RequestLogger(f LogConstructor) func(next http.Handler) http.Handler {
 		fn := func(w http.ResponseWriter, r *http.Request) {
 			entry := f.NewLogWriter(r)
 			ww := middleware.NewWrapResponseWriter(w, r.ProtoMajor)
-
+			w.Header().Add(log.RequestIDHeader, log.GetReqID(r.Context()))
 			t1 := time.Now()
 			buffer := bytes.NewBuffer([]byte{})
 			ww.Tee(buffer)
@@ -64,8 +60,8 @@ func (l *LogEntry) Write(status, bytes int, header http.Header, elapsed time.Dur
 	}
 
 	if l.logger.Core().Enabled(zap.DebugLevel) {
-		outgoingResponseFields = append(outgoingResponseFields, decodeHeader(header))
-		outgoingResponseFields = append(outgoingResponseFields, decodeBody(body))
+		outgoingResponseFields = append(outgoingResponseFields, log.DecodeHeader(header))
+		outgoingResponseFields = append(outgoingResponseFields, log.DecodeBody(body))
 	}
 
 	l.logger.With(outgoingResponseFields...).Info("Outgoing HTTP Response")
@@ -99,12 +95,14 @@ func (l *LogWriterConstructor) NewLogWriter(r *http.Request) LogWriter {
 		buf, bodyErr := ioutil.ReadAll(r.Body)
 		if bodyErr != nil {
 			incomingRequestFields = append(incomingRequestFields, zap.Error(bodyErr))
+		} else {
+			r.Body = ioutil.NopCloser(bytes.NewBuffer(buf))
+			incomingRequestFields = append(incomingRequestFields, log.DecodeBody(ioutil.NopCloser(bytes.NewBuffer(buf))))
+			incomingRequestFields = append(incomingRequestFields, log.DecodeHeader(r.Header))
 		}
-		incomingRequestFields = append(incomingRequestFields, decodeBody(ioutil.NopCloser(bytes.NewBuffer(buf))))
-		incomingRequestFields = append(incomingRequestFields, decodeHeader(r.Header))
 	}
 
-	if reqID := GetReqID(r.Context()); reqID != "" {
+	if reqID := log.GetReqID(r.Context()); reqID != "" {
 		logFields = append(logFields, zap.String("req_id", reqID))
 		incomingRequestFields = append(incomingRequestFields, zap.String("req_id", reqID))
 	}
@@ -132,33 +130,4 @@ func Log(ctx context.Context) *zap.Logger {
 	} else {
 		return log.Logger
 	}
-}
-
-func decodeBody(r io.Reader) zap.Field {
-	bodyBytes, err := ioutil.ReadAll(r)
-	if err != nil {
-		return zap.Error(err)
-	}
-	var b interface{}
-	err = json.Unmarshal(bodyBytes, &b)
-	if err == nil {
-		return zap.Any("body", b)
-	}
-
-	return zap.String("body", string(bodyBytes))
-}
-
-func decodeHeader(h http.Header) zap.Field {
-	headers := map[string]string{}
-	for k, v := range h {
-		if strings.ToLower(k) == "authorization" {
-			hash := sha256.New()
-			hash.Write([]byte(strings.Join(v, "|")))
-			headers[k] = base64.URLEncoding.EncodeToString(hash.Sum(nil))
-		} else {
-			headers[k] = strings.Join(v, "|")
-		}
-	}
-
-	return zap.Any("headers", headers)
 }
