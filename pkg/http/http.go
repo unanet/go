@@ -1,9 +1,7 @@
 package http
 
 import (
-	"bytes"
 	"context"
-	"io/ioutil"
 	"net/http"
 
 	"go.uber.org/zap"
@@ -39,14 +37,8 @@ var DefaultLogRequest = func(req *http.Request) {
 
 	l := log.Logger
 	if l.Core().Enabled(zap.DebugLevel) {
-		buf, bodyErr := ioutil.ReadAll(req.Body)
-		if bodyErr != nil {
-			fields = append(fields, zap.Error(bodyErr))
-		} else {
-			req.Body = ioutil.NopCloser(bytes.NewBuffer(buf))
-			fields = append(fields, log.DecodeBody(ioutil.NopCloser(bytes.NewBuffer(buf))))
-			fields = append(fields, log.DecodeHeader(req.Header))
-		}
+		fields = append(fields, log.DecodeBodyFromRequest(req))
+		fields = append(fields, log.DecodeHeaderFromRequest(req))
 	}
 
 	l.Info("Outgoing HTTP Request", fields...)
@@ -67,14 +59,8 @@ var DefaultLogResponse = func(resp *http.Response) {
 	}
 
 	if l.Core().Enabled(zap.DebugLevel) {
-		buf, bodyErr := ioutil.ReadAll(resp.Body)
-		if bodyErr != nil {
-			fields = append(fields, zap.Error(bodyErr))
-		} else {
-			resp.Body = ioutil.NopCloser(bytes.NewBuffer(buf))
-			fields = append(fields, log.DecodeBody(ioutil.NopCloser(bytes.NewBuffer(buf))))
-			fields = append(fields, log.DecodeHeader(resp.Header))
-		}
+		fields = append(fields, log.DecodeBodyFromResponse(resp))
+		fields = append(fields, log.DecodeHeaderFromResponse(resp))
 	}
 
 	l.Info("Incoming HTTP Response", fields...)

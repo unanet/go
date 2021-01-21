@@ -92,14 +92,8 @@ func (l *LogWriterConstructor) NewLogWriter(r *http.Request) LogWriter {
 	}
 
 	if l.logger.Core().Enabled(zap.DebugLevel) {
-		buf, bodyErr := ioutil.ReadAll(r.Body)
-		if bodyErr != nil {
-			incomingRequestFields = append(incomingRequestFields, zap.Error(bodyErr))
-		} else {
-			r.Body = ioutil.NopCloser(bytes.NewBuffer(buf))
-			incomingRequestFields = append(incomingRequestFields, log.DecodeBody(ioutil.NopCloser(bytes.NewBuffer(buf))))
-			incomingRequestFields = append(incomingRequestFields, log.DecodeHeader(r.Header))
-		}
+		incomingRequestFields = append(incomingRequestFields, log.DecodeBodyFromRequest(r))
+		incomingRequestFields = append(incomingRequestFields, log.DecodeHeaderFromRequest(r))
 	}
 
 	if reqID := log.GetReqID(r.Context()); reqID != "" {

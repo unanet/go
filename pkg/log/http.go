@@ -1,6 +1,7 @@
 package log
 
 import (
+	"bytes"
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/json"
@@ -12,7 +13,47 @@ import (
 	"go.uber.org/zap"
 )
 
-func DecodeBody(r io.Reader) zap.Field {
+func DecodeBodyFromRequest(r *http.Request) zap.Field {
+	if r.Body == nil {
+		return zap.String("body", "")
+	}
+	buf, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		return zap.Error(err)
+	}
+	r.Body = ioutil.NopCloser(bytes.NewBuffer(buf))
+	var b interface{}
+	err = json.Unmarshal(buf, &b)
+	if err == nil {
+		return zap.Any("body", b)
+	}
+
+	return zap.String("body", string(buf))
+}
+
+func DecodeBodyFromResponse(r *http.Response) zap.Field {
+	if r.Body == nil {
+		return zap.String("body", "")
+	}
+	buf, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		return zap.Error(err)
+	}
+	r.Body = ioutil.NopCloser(bytes.NewBuffer(buf))
+	var b interface{}
+	err = json.Unmarshal(buf, &b)
+	if err == nil {
+		return zap.Any("body", b)
+	}
+
+	return zap.String("body", string(buf))
+}
+
+func DecodeBody(r io.ReadCloser) zap.Field {
+	if r == nil {
+		return zap.String("body", "")
+	}
+
 	bodyBytes, err := ioutil.ReadAll(r)
 	if err != nil {
 		return zap.Error(err)
@@ -24,6 +65,14 @@ func DecodeBody(r io.Reader) zap.Field {
 	}
 
 	return zap.String("body", string(bodyBytes))
+}
+
+func DecodeHeaderFromRequest(r *http.Request) zap.Field {
+	return DecodeHeader(r.Header)
+}
+
+func DecodeHeaderFromResponse(r *http.Response) zap.Field {
+	return DecodeHeader(r.Header)
 }
 
 func DecodeHeader(h http.Header) zap.Field {
