@@ -1,6 +1,7 @@
 package log
 
 import (
+	"os"
 	"strings"
 
 	"github.com/kelseyhightower/envconfig"
@@ -10,9 +11,17 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
-var (
-	Logger *zap.Logger
+func init() {
+	var err error
+	hostname, err = os.Hostname()
+	if hostname == "" || err != nil {
+		hostname = "localhost"
+	}
+}
 
+var (
+	Logger            *zap.Logger
+	hostname          string
 	statLogLevelCount = promauto.NewCounterVec(
 		prometheus.CounterOpts{
 			Name: "log_level_total",
@@ -97,7 +106,7 @@ func newLogger(ll string) *zap.Logger {
 		panic(err)
 	}
 
-	return logger
+	return logger.With(zap.String("hostname", hostname))
 }
 
 func init() {
