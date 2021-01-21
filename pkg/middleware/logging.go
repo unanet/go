@@ -16,7 +16,7 @@ import (
 )
 
 type LogWriter interface {
-	Write(status, bytes int, header http.Header, elapsed time.Duration, body io.Reader)
+	Write(status, bytes int, header http.Header, elapsed time.Duration, body io.ReadCloser)
 	Panic(v interface{}, stack []byte)
 }
 
@@ -52,7 +52,7 @@ func RequestLogger(f LogConstructor) func(next http.Handler) http.Handler {
 	}
 }
 
-func (l *LogEntry) Write(status, bytes int, header http.Header, elapsed time.Duration, body io.Reader) {
+func (l *LogEntry) Write(status, bytes int, header http.Header, elapsed time.Duration, body io.ReadCloser) {
 	outgoingResponseFields := []zap.Field{
 		zap.Int("status", status),
 		zap.Int("resp_bytes_length", bytes),
