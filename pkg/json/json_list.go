@@ -89,6 +89,14 @@ func (j *List) AsList() ([]string, error) {
 	return list, nil
 }
 
+func (j *List) AsListOrEmpty() []string {
+	l, err := j.AsList()
+	if err != nil {
+		return []string{}
+	}
+	return l
+}
+
 // String supports pretty printing for JSONText types.
 func (j List) String() string {
 	return string(j)
@@ -96,7 +104,7 @@ func (j List) String() string {
 
 func FromList(l []string) (List, error) {
 	if l == nil {
-		l = []string{}
+		return EmptyJSONList, nil
 	}
 
 	b, err := json.Marshal(l)
@@ -104,4 +112,13 @@ func FromList(l []string) (List, error) {
 		return nil, err
 	}
 	return b, nil
+}
+
+func FromListOrEmpty(l []string) List {
+	list, err := FromList(l)
+	if err != nil {
+		return EmptyJSONList
+	}
+
+	return list
 }

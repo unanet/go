@@ -99,6 +99,24 @@ func (j *Object) AsMapOrEmpty() map[string]interface{} {
 	}
 }
 
+func (j *Object) AsStringMap() (map[string]string, error) {
+	hash := make(map[string]string)
+	err := j.Unmarshal(&hash)
+	if err != nil {
+		return nil, err
+	}
+	return hash, nil
+}
+
+func (j *Object) AsStringMapOrEmpty() map[string]string {
+	m, err := j.AsStringMap()
+	if err != nil {
+		return map[string]string{}
+	} else {
+		return m
+	}
+}
+
 // String supports pretty printing for JSONText types.
 func (j Object) String() string {
 	return string(j)
@@ -106,7 +124,7 @@ func (j Object) String() string {
 
 func FromMap(m map[string]interface{}) (Object, error) {
 	if m == nil {
-		m = map[string]interface{}{}
+		return EmptyJSONObject, nil
 	}
 
 	b, err := json.Marshal(m)
@@ -117,7 +135,27 @@ func FromMap(m map[string]interface{}) (Object, error) {
 }
 
 func FromMapOrEmpty(m map[string]interface{}) Object {
+	b, err := FromMap(m)
+	if err != nil {
+		return EmptyJSONObject
+	}
+	return b
+}
+
+func FromStringMap(m map[string]string) (Object, error) {
+	if m == nil {
+		return EmptyJSONObject, nil
+	}
+
 	b, err := json.Marshal(m)
+	if err != nil {
+		return nil, err
+	}
+	return b, nil
+}
+
+func FromStringMapOrEmpty(m map[string]string) Object {
+	b, err := FromStringMap(m)
 	if err != nil {
 		return EmptyJSONObject
 	}
