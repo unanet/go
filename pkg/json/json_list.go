@@ -23,6 +23,15 @@ func StructToJsonList(v interface{}) (List, error) {
 	return j, nil
 }
 
+func StructToJsonListOrEmpty(v interface{}) List {
+	obj, err := StructToJsonList(v)
+	if err != nil {
+		return EmptyJSONList
+	}
+
+	return obj
+}
+
 // MarshalJSON returns the *j as the JSON encoding of j.
 func (j List) MarshalJSON() ([]byte, error) {
 	if len(j) == 0 {

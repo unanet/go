@@ -23,6 +23,15 @@ func StructToJsonObject(v interface{}) (Object, error) {
 	return j, nil
 }
 
+func StructToJsonObjectOrEmpty(v interface{}) Object {
+	obj, err := StructToJsonObject(v)
+	if err != nil {
+		return EmptyJSONObject
+	}
+
+	return obj
+}
+
 // MarshalJSON returns the *j as the JSON encoding of j.
 func (j Object) MarshalJSON() ([]byte, error) {
 	if len(j) == 0 {
