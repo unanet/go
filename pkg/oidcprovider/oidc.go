@@ -19,7 +19,6 @@ type Config struct {
 	ClientID     string `split_words:"true" required:"true"`
 	ClientSecret string `split_words:"true" required:"true"`
 	RedirectURL  string `split_words:"true" required:"true"`
-	Scopes       string `split_words:"true" default:"profile,email"`
 }
 
 func NewService(cfg *Config, opts ...Option) (*Service, error) {
@@ -39,7 +38,7 @@ func NewService(cfg *Config, opts ...Option) (*Service, error) {
 			RedirectURL:  cfg.RedirectURL,
 			Endpoint:     provider.Endpoint(),
 			// "openid" is a required scope for OpenID Connect flows.
-			Scopes: []string{oidc.ScopeOpenID, cfg.Scopes},
+			Scopes: []string{oidc.ScopeOpenID, "profile", "email"},
 		},
 	}, nil
 }
