@@ -15,31 +15,31 @@ type Service struct {
 }
 
 type Config struct {
-	OidcConnURL      string `split_words:"true" default:"https://idp.unanet.io/auth/realms/devops"`
-	OidcClientID     string `split_words:"true" required:"true"`
-	OidcClientSecret string `split_words:"true" required:"true"`
-	OidcRedirectURL  string `split_words:"true" required:"true"`
-	OidcScopes       string `split_words:"true" default:"profile,email"`
+	ConnURL      string `split_words:"true" default:"https://idp.unanet.io/auth/realms/devops"`
+	ClientID     string `split_words:"true" required:"true"`
+	ClientSecret string `split_words:"true" required:"true"`
+	RedirectURL  string `split_words:"true" required:"true"`
+	Scopes       string `split_words:"true" default:"profile,email"`
 }
 
 func NewService(cfg *Config, opts ...Option) (*Service, error) {
 
-	provider, err := oidc.NewProvider(context.Background(), cfg.OidcConnURL)
+	provider, err := oidc.NewProvider(context.Background(), cfg.ConnURL)
 	if err != nil {
 		return nil, err
 	}
 
 	return &Service{
 		Verifier: provider.Verifier(&oidc.Config{
-			ClientID: cfg.OidcClientID,
+			ClientID: cfg.ClientID,
 		}),
 		oauth2Config: oauth2.Config{
-			ClientID:     cfg.OidcClientID,
-			ClientSecret: cfg.OidcClientSecret,
-			RedirectURL:  cfg.OidcRedirectURL,
+			ClientID:     cfg.ClientID,
+			ClientSecret: cfg.ClientSecret,
+			RedirectURL:  cfg.RedirectURL,
 			Endpoint:     provider.Endpoint(),
 			// "openid" is a required scope for OpenID Connect flows.
-			Scopes: []string{oidc.ScopeOpenID, cfg.OidcScopes},
+			Scopes: []string{oidc.ScopeOpenID, cfg.Scopes},
 		},
 	}, nil
 }
