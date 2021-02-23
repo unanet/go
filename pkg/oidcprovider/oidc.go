@@ -10,7 +10,7 @@ import (
 type Option func(*Service)
 
 type Service struct {
-	Verifier     *oidc.IDTokenVerifier
+	verifier     *oidc.IDTokenVerifier
 	oauth2Config oauth2.Config
 }
 
@@ -29,7 +29,7 @@ func NewService(cfg *Config, opts ...Option) (*Service, error) {
 	}
 
 	return &Service{
-		Verifier: provider.Verifier(&oidc.Config{
+		verifier: provider.Verifier(&oidc.Config{
 			ClientID: cfg.ClientID,
 		}),
 		oauth2Config: oauth2.Config{
@@ -49,4 +49,8 @@ func (svc *Service) AuthCodeURL(state string, opts ...oauth2.AuthCodeOption) str
 
 func (svc *Service) Exchange(ctx context.Context, code string, opts ...oauth2.AuthCodeOption) (*oauth2.Token, error) {
 	return svc.oauth2Config.Exchange(ctx, code, opts...)
+}
+
+func (svc *Service) Verify(ctx context.Context, rawIDToken string) (*oidc.IDToken, error) {
+	return svc.verifier.Verify(ctx, rawIDToken)
 }
