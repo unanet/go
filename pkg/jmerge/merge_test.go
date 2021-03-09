@@ -1,4 +1,4 @@
-package mergemap
+package jmerge
 
 import (
 	"encoding/json"
@@ -10,8 +10,6 @@ import (
 
 var input1 = []byte("{ \"spec\": { \"containers\": [ { \"livenessProbe\": { \"httpGet\": { \"path\": \"/liveliness\", \"port\": 3000 }, \"periodSeconds\": 30, \"initialDelaySeconds\": 10 } } ] } }")
 var input2 = []byte("{ \"spec\": { \"containers\": [ { \"resources\": { \"requests\": { \"cpu\": \"200m\", \"memory\": \"50M\" } } }  ] } }")
-var input3 = []byte("{ \"spec\": { \"containers\": [{} ]  }")
-var input4 = []byte("{ \"spec\": { \"containers\": [ { \"resources\": { \"requests\": { \"cpu\": \"200m\", \"memory\": \"50M\" } } } ] } }")
 
 func PrettyPrint(m interface{}) {
 	pretty, _ := json.MarshalIndent(m, "", "    ")
@@ -30,5 +28,7 @@ func TestMerge(t *testing.T) {
 	var destMap = make(map[string]interface{})
 
 	m1 := Merge(destMap, map1)
-	PrettyPrint(Merge(m1, map2))
+	PrettyPrint(m1)
+	m2 := Merge(m1, map2)
+	PrettyPrint(m2)
 }
