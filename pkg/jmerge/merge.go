@@ -6,8 +6,8 @@ import (
 
 const MaxDepth = 32
 
-func Merge(dst, src interface{}) interface{} {
-	return merge(dst, src, 0)
+func Merge(dst, src map[string]interface{}) map[string]interface{} {
+	return merge(dst, src, 0).(map[string]interface{})
 }
 
 func cRecursion(dst, src interface{}, depth int) interface{} {
