@@ -27,8 +27,20 @@ func TestMerge(t *testing.T) {
 
 	var destMap = make(map[string]interface{})
 
-	m1 := Merge(destMap, map1)
+	var entries = []map[string]interface{}{map1,map2}
+
+	var m1 interface{}
+	for _,i := range entries {
+		if len(destMap) == 0 {
+			m1 = Merge(destMap, i)
+		}else{
+			m1 = Merge(destMap, i)
+		}
+
+	}
+
+	//m1 := Merge(make(map[string]interface{}), map1)
+	// PrettyPrint(m1)
+	//m2 := Merge(m1, map2)
 	PrettyPrint(m1)
-	m2 := Merge(m1, map2)
-	PrettyPrint(m2)
 }
