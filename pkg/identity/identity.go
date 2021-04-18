@@ -20,10 +20,6 @@ type Service struct {
 	oauth2Config oauth2.Config
 }
 
-type Validator interface {
-	Error(ctx context.Context, token string) error
-}
-
 type Config struct {
 	ConnURL      string `split_words:"true" default:"https://idp.unanet.io/auth/realms/devops"`
 	ClientID     string `split_words:"true" required:"true"`
@@ -122,33 +118,3 @@ func (svc *Service) Exchange(ctx context.Context, code string, opts ...oauth2.Au
 func (svc *Service) Verify(ctx context.Context, rawIDToken string) (*oidc.IDToken, error) {
 	return svc.verifier.Verify(ctx, rawIDToken)
 }
-
-//func (svc *Service) AuthenticationMiddleware(adminToken string) func(http.Handler) http.Handler {
-//	return func(next http.Handler) http.Handler {
-//		hfn := func(w http.ResponseWriter, r *http.Request) {
-//
-//			ctx := r.Context()
-//			claims, err := svc.TokenVerification(ctx, r)
-//			if err != nil {
-//				render.Respond(w, r, err.Error())
-//				return
-//			}
-//
-//
-//			grantedAccess, err := m.enforcer.Enforce(claims["role"], r.URL.Path, r.Method)
-//			if err != nil {
-//				middleware.Log(ctx).Error("casbin enforced resulted in an error", zap.Error(err))
-//				render.Status(r, 500)
-//				return
-//			}
-//
-//			if !grantedAccess {
-//				render.Respond(w, r, errors.NewRestError(403, "Forbidden"))
-//				return
-//			}
-//
-//			next.ServeHTTP(w, r.WithContext(ctx))
-//		}
-//		return http.HandlerFunc(hfn)
-//	}
-//}
