@@ -78,7 +78,7 @@ func (svc *Service) TokenVerification(r *http.Request) (jwt.MapClaims, error) {
 	if verr == nil {
 		var idTokenClaims = new(jwt.MapClaims)
 		if err := keyCloakToken.Claims(&idTokenClaims); err != nil {
-			return nil, err
+			return nil, errors.ErrMapTokenClaims
 		}
 		return *idTokenClaims, nil
 	}
@@ -101,7 +101,7 @@ func (svc *Service) TokenVerification(r *http.Request) (jwt.MapClaims, error) {
 	if tokenClaims, ok := ct.Claims.(jwt.MapClaims); ok {
 		claims = tokenClaims
 	} else {
-		return nil, goErrors.New("failed to map claims to jwt.MapClaims")
+		return nil, errors.ErrMapTokenClaims
 	}
 
 	return claims, nil

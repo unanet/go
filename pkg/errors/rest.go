@@ -5,6 +5,9 @@ import (
 	"net/http"
 )
 
+
+var ErrMapTokenClaims = NewRestError(500,"FailedMapTokenClaims")
+
 var ErrExpired = NewRestError(401, "Expired")
 
 var ErrUnauthorized = NewRestError(401, "UnAuthorized")
