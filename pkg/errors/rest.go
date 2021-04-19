@@ -12,6 +12,10 @@ var ErrExpired = NewRestError(401, "Expired")
 
 var ErrUnauthorized = NewRestError(401, "UnAuthorized")
 
+var ErrEmptyToken = NewRestError(401, "EmptyToken")
+
+var ErrInvalidToken = NewRestError(401, "InvalidToken")
+
 var ErrNotFound = NewRestError(404, "NotFound")
 
 // RestError represents a Rest HTTP Error that can be returned from a controller

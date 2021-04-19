@@ -69,7 +69,7 @@ func (svc *Service) TokenVerification(r *http.Request) (jwt.MapClaims, error) {
 	token := jwtauth.TokenFromHeader(r)
 	// Empty Token return unauthorized error
 	if len(token) == 0 {
-		return nil, errors.ErrUnauthorized
+		return nil, errors.ErrEmptyToken
 	}
 
 	// Attempt to verify the token again OIDC provider (Keycloak via Okta auth) first
@@ -94,17 +94,14 @@ func (svc *Service) TokenVerification(r *http.Request) (jwt.MapClaims, error) {
 	}
 
 	if ct == nil || !ct.Valid {
-		return nil, errors.ErrUnauthorized
+		return nil, errors.ErrInvalidToken
 	}
 
-	var claims jwt.MapClaims
 	if tokenClaims, ok := ct.Claims.(jwt.MapClaims); ok {
-		claims = tokenClaims
+		return tokenClaims, nil
 	} else {
 		return nil, errors.ErrMapTokenClaims
 	}
-
-	return claims, nil
 }
 
 func (svc *Service) AuthCodeURL(state string, opts ...oauth2.AuthCodeOption) string {
