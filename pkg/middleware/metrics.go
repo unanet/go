@@ -31,11 +31,10 @@ func Metrics(next http.Handler) http.Handler {
 		// Run this on the way out (i.e. outgoing response)
 		defer func() {
 			// Calculate the request duration (i.e. latency)
-			ms := float64(time.Since(now).Milliseconds())
+			seconds := time.Since(now).Seconds()
 
 			// Tally the outgoing response metrics
-			metrics.StatRequestDurationHistogram.WithLabelValues(r.Method, r.Proto, routePattern).Observe(ms)
-			metrics.StatRequestDurationGauge.WithLabelValues(r.Method, r.Proto, routePattern).Set(ms)
+			metrics.StatRequestDurationHistogram.WithLabelValues(r.Method, r.Proto, routePattern).Observe(seconds)
 			metrics.StatRequestSaturationGauge.WithLabelValues(r.Method, r.Proto, routePattern).Dec()
 			metrics.StatHTTPResponseCount.WithLabelValues(strconv.Itoa(ww.Status()), r.Method, r.Proto, routePattern).Inc()
 		}()

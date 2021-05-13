@@ -26,12 +26,6 @@ var (
 			Help: "A metric with a constant '1' value labeled by version, revision, branch, and goversion from which the service was built",
 		}, []string{"service", "revision", "branch", "version", "author", "build_date", "build_user", "build_host"})
 
-	StatRequestDurationGauge = promauto.NewGaugeVec(
-		prometheus.GaugeOpts{
-			Name: "http_request_duration_ms",
-			Help: "The time the server spends processing a request in milliseconds",
-		}, []string{"method", "protocol", "path"})
-
 	StatHTTPRequestCount = promauto.NewCounterVec(
 		prometheus.CounterOpts{
 			Name: "http_request_total",
@@ -46,8 +40,8 @@ var (
 
 	StatRequestDurationHistogram = promauto.NewHistogramVec(
 		prometheus.HistogramOpts{
-			Name:    "http_request_duration_histogram_ms",
-			Help:    "time spent processing an http request in milliseconds",
+			Name:    "http_request_duration_seconds",
+			Help:    "time spent processing an http request in seconds",
 			Buckets: prometheus.ExponentialBuckets(0.1, 2, 18),
 		}, []string{"method", "protocol", "path"})
 )
