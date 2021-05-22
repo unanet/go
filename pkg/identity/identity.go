@@ -75,7 +75,11 @@ func (svc *Service) TokenVerification(r *http.Request) (jwt.MapClaims, error) {
 	// Attempt to verify the token again OIDC provider (Keycloak via Okta auth) first
 	// If its a valid token (no error) return immediately
 	keyCloakToken, verr := svc.verifier.Verify(ctx, token)
-	if verr == nil {
+	if verr != nil {
+		if goErrors.Is(verr, jwtauth.ErrExpired) {
+			return nil, errors.ErrExpired
+		}
+	} else {
 		var idTokenClaims = new(jwt.MapClaims)
 		if err := keyCloakToken.Claims(&idTokenClaims); err != nil {
 			return nil, errors.ErrMapTokenClaims
@@ -90,18 +94,18 @@ func (svc *Service) TokenVerification(r *http.Request) (jwt.MapClaims, error) {
 		if goErrors.Is(err, jwtauth.ErrExpired) {
 			return nil, errors.ErrExpired
 		}
-		return nil, errors.ErrUnauthorized
-	}
-
-	if ct == nil || !ct.Valid {
-		return nil, errors.ErrInvalidToken
-	}
-
-	if tokenClaims, ok := ct.Claims.(jwt.MapClaims); ok {
-		return tokenClaims, nil
 	} else {
-		return nil, errors.ErrMapTokenClaims
+		if ct == nil || !ct.Valid {
+			return nil, errors.ErrInvalidToken
+		}
+		if tokenClaims, ok := ct.Claims.(jwt.MapClaims); ok {
+			return tokenClaims, nil
+		} else {
+			return nil, errors.ErrMapTokenClaims
+		}
 	}
+
+	return nil, errors.ErrUnauthorized
 }
 
 func (svc *Service) AuthCodeURL(state string, opts ...oauth2.AuthCodeOption) string {
