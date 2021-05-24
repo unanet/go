@@ -3,12 +3,14 @@ package identity
 import (
 	"context"
 	goErrors "errors"
+	"fmt"
+	"net/http"
+
 	"github.com/coreos/go-oidc"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/go-chi/jwtauth"
 	"gitlab.unanet.io/devops/go/pkg/errors"
 	"golang.org/x/oauth2"
-	"net/http"
 )
 
 type Option func(*Service)
@@ -61,7 +63,7 @@ func NewService(cfg Config, opts ...Option) (*Service, error) {
 	return svc, nil
 }
 
-// TokenVerification is to verify the incoming request
+// TokenVerification verifies the incoming token request
 // right now we are supporting the admin token, the k8s /login token from cloud-api and the new keycloak token
 // TODO: remove support for k8s cloud-api /login and the admin token
 func (svc *Service) TokenVerification(r *http.Request) (jwt.MapClaims, error) {
@@ -94,18 +96,16 @@ func (svc *Service) TokenVerification(r *http.Request) (jwt.MapClaims, error) {
 		if goErrors.Is(err, jwtauth.ErrExpired) {
 			return nil, errors.ErrExpired
 		}
-	} else {
-		if ct == nil || !ct.Valid {
-			return nil, errors.ErrInvalidToken
-		}
-		if tokenClaims, ok := ct.Claims.(jwt.MapClaims); ok {
-			return tokenClaims, nil
-		} else {
-			return nil, errors.ErrMapTokenClaims
-		}
+		return nil, errors.NewRestError(http.StatusUnauthorized, fmt.Sprintf("Unauthorized: %s", err.Error()))
 	}
-
-	return nil, errors.ErrUnauthorized
+	if ct == nil || !ct.Valid {
+		return nil, errors.ErrInvalidToken
+	}
+	if tokenClaims, ok := ct.Claims.(jwt.MapClaims); ok {
+		return tokenClaims, nil
+	} else {
+		return nil, errors.ErrMapTokenClaims
+	}
 }
 
 func (svc *Service) AuthCodeURL(state string, opts ...oauth2.AuthCodeOption) string {
