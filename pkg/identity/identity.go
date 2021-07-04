@@ -91,21 +91,24 @@ func (svc *Service) TokenVerification(r *http.Request) (jwt.MapClaims, error) {
 
 	// Attempt to verify the token against cloud-api /login route for k8s tokens
 	// TODO: eventually remove this when everything is using Keycloak instead of /login route in cloud-api
-	ct, err := jwtauth.VerifyRequest(svc.jwtAuth, r, jwtauth.TokenFromHeader)
-	if err != nil {
-		if goErrors.Is(err, jwtauth.ErrExpired) {
-			return nil, errors.ErrExpired
+	if svc.jwtAuth != nil {
+		ct, err := jwtauth.VerifyRequest(svc.jwtAuth, r, jwtauth.TokenFromHeader)
+		if err != nil {
+			if goErrors.Is(err, jwtauth.ErrExpired) {
+				return nil, errors.ErrExpired
+			}
+			return nil, errors.NewRestError(http.StatusUnauthorized, fmt.Sprintf("Unauthorized: %s", err.Error()))
 		}
-		return nil, errors.NewRestError(http.StatusUnauthorized, fmt.Sprintf("Unauthorized: %s", err.Error()))
+		if ct == nil || !ct.Valid {
+			return nil, errors.ErrInvalidToken
+		}
+		if tokenClaims, ok := ct.Claims.(jwt.MapClaims); ok {
+			return tokenClaims, nil
+		} else {
+			return nil, errors.ErrMapTokenClaims
+		}
 	}
-	if ct == nil || !ct.Valid {
-		return nil, errors.ErrInvalidToken
-	}
-	if tokenClaims, ok := ct.Claims.(jwt.MapClaims); ok {
-		return tokenClaims, nil
-	} else {
-		return nil, errors.ErrMapTokenClaims
-	}
+	return nil, errors.ErrUnauthorized
 }
 
 func (svc *Service) AuthCodeURL(state string, opts ...oauth2.AuthCodeOption) string {
