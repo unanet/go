@@ -23,7 +23,7 @@ type Service struct {
 }
 
 type Config struct {
-	ConnURL      string `split_words:"true" default:"https://idp.unanet.io/auth/realms/devops"`
+	ConnURL      string `split_words:"true" required:"true"`
 	ClientID     string `split_words:"true" required:"true"`
 	ClientSecret string `split_words:"true" required:"true"`
 	RedirectURL  string `split_words:"true" required:"true"`
