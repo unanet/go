@@ -12,7 +12,7 @@ import (
 	"github.com/go-chi/chi/middleware"
 	"go.uber.org/zap"
 
-	"gitlab.unanet.io/devops/go/pkg/log"
+	"github.com/unanet/go/pkg/log"
 )
 
 type LogWriter interface {

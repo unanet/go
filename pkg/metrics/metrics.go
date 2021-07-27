@@ -10,7 +10,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"go.uber.org/zap"
 
-	"gitlab.unanet.io/devops/go/pkg/log"
+	"github.com/unanet/go/pkg/log"
 )
 
 var (

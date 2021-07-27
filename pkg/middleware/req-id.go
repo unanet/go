@@ -7,7 +7,7 @@ import (
 	"context"
 	"net/http"
 
-	"gitlab.unanet.io/devops/go/pkg/log"
+	"github.com/unanet/go/pkg/log"
 )
 
 // A quick note on the statistics here: we're trying to calculate the chance that

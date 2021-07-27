@@ -9,7 +9,7 @@ import (
 	"github.com/coreos/go-oidc"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/go-chi/jwtauth"
-	"gitlab.unanet.io/devops/go/pkg/errors"
+	"github.com/unanet/go/pkg/errors"
 	"golang.org/x/oauth2"
 )
 

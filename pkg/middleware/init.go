@@ -7,7 +7,7 @@ import (
 	"github.com/go-chi/render"
 	"go.uber.org/zap"
 
-	"gitlab.unanet.io/devops/go/pkg/errors"
+	"github.com/unanet/go/pkg/errors"
 )
 
 func init() {

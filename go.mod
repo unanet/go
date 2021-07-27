@@ -1,4 +1,4 @@
-module gitlab.unanet.io/devops/go
+module github.com/unanet/go
 
 go 1.15
 

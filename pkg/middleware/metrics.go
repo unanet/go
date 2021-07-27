@@ -7,7 +7,7 @@ import (
 
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
-	"gitlab.unanet.io/devops/go/pkg/metrics"
+	"github.com/unanet/go/pkg/metrics"
 )
 
 // Metrics adapts the incoming request with Logging/Metrics
