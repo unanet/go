@@ -7,8 +7,8 @@ import (
 	"net/http"
 
 	"github.com/coreos/go-oidc"
-	"github.com/dgrijalva/jwt-go"
 	"github.com/go-chi/jwtauth"
+	"github.com/golang-jwt/jwt"
 	"github.com/unanet/go/pkg/errors"
 	"golang.org/x/oauth2"
 )
