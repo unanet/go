@@ -35,6 +35,18 @@ func JWTClientOpt(signingKey string) Option {
 	}
 }
 
+func WithAdditionalScopesOpt(scopes []string) Option {
+	return func(svc *Service) {
+		svc.oauth2Config.Scopes = append(svc.oauth2Config.Scopes, scopes...)
+	}
+}
+
+func WithScopesOpt(scopes []string) Option {
+	return func(svc *Service) {
+		svc.oauth2Config.Scopes = scopes
+	}
+}
+
 func NewService(cfg Config, opts ...Option) (*Service, error) {
 
 	provider, err := oidc.NewProvider(context.Background(), cfg.ConnURL)
