@@ -13,7 +13,9 @@ func SetupMiddleware(r chi.Router, timeout time.Duration) {
 	r.Use(middleware.RealIP)
 	r.Use(Logger())
 	r.Use(middleware.Recoverer)
-	r.Use(middleware.Timeout(timeout))
+	if timeout > 0 {
+		r.Use(middleware.Timeout(timeout))
+	}
 }
 
 type MetricsProvider interface {
