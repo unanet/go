@@ -32,7 +32,7 @@ func JWTClientValidatorOpt(signingKey string) ValidatorOption {
 	}
 }
 
-func NewValidator(cfg ValidatorConfig) (*Validator, error) {
+func NewValidator(cfg ValidatorConfig, opts ...ValidatorOption) (*Validator, error) {
 	provider, err := oidc.NewProvider(context.Background(), cfg.ConnURL)
 	if err != nil {
 		return nil, err
@@ -42,6 +42,10 @@ func NewValidator(cfg ValidatorConfig) (*Validator, error) {
 		verifier: provider.Verifier(&oidc.Config{
 			ClientID: cfg.ClientID,
 		}),
+	}
+
+	for _, opt := range opts {
+		opt(&validator)
 	}
 
 	return &validator, nil
