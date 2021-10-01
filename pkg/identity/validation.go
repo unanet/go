@@ -9,76 +9,48 @@ import (
 	"github.com/coreos/go-oidc"
 	"github.com/go-chi/jwtauth"
 	"github.com/golang-jwt/jwt"
+
 	"github.com/unanet/go/pkg/errors"
-	"golang.org/x/oauth2"
 )
 
-type Option func(*Service)
+type ValidatorOption func(validator *Validator)
 
-type Service struct {
+type ValidatorConfig struct {
+	ClientID string `split_words:"true" required:"true"`
+	ConnURL  string `split_words:"true" required:"true"`
+}
+
+type Validator struct {
 	// TODO: Remove after apps are migrated from legacy /login route
-	jwtAuth      *jwtauth.JWTAuth // Used for Legacy login route
-	verifier     *oidc.IDTokenVerifier
-	oauth2Config oauth2.Config
+	jwtAuth  *jwtauth.JWTAuth // Used for Legacy login route
+	verifier *oidc.IDTokenVerifier
 }
 
-type Config struct {
-	ConnURL      string `split_words:"true" required:"true"`
-	ClientID     string `split_words:"true" required:"true"`
-	ClientSecret string `split_words:"true" required:"true"`
-	RedirectURL  string `split_words:"true" required:"true"`
-}
-
-func JWTClientOpt(signingKey string) Option {
-	return func(svc *Service) {
-		svc.jwtAuth = jwtauth.New(jwt.SigningMethodHS256.Alg(), []byte(signingKey), nil)
+func JWTClientValidatorOpt(signingKey string) ValidatorOption {
+	return func(v *Validator) {
+		v.jwtAuth = jwtauth.New(jwt.SigningMethodHS256.Alg(), []byte(signingKey), nil)
 	}
 }
 
-func WithAdditionalScopesOpt(scopes []string) Option {
-	return func(svc *Service) {
-		svc.oauth2Config.Scopes = append(svc.oauth2Config.Scopes, scopes...)
-	}
-}
-
-func WithScopesOpt(scopes []string) Option {
-	return func(svc *Service) {
-		svc.oauth2Config.Scopes = scopes
-	}
-}
-
-func NewService(cfg Config, opts ...Option) (*Service, error) {
-
+func NewValidator(cfg ValidatorConfig) (*Validator, error) {
 	provider, err := oidc.NewProvider(context.Background(), cfg.ConnURL)
 	if err != nil {
 		return nil, err
 	}
 
-	svc := &Service{
+	validator := Validator{
 		verifier: provider.Verifier(&oidc.Config{
 			ClientID: cfg.ClientID,
 		}),
-		oauth2Config: oauth2.Config{
-			ClientID:     cfg.ClientID,
-			ClientSecret: cfg.ClientSecret,
-			RedirectURL:  cfg.RedirectURL,
-			Endpoint:     provider.Endpoint(),
-			// "openid" is a required scope for OpenID Connect flows.
-			Scopes: []string{oidc.ScopeOpenID, "profile", "email"},
-		},
 	}
 
-	for _, opt := range opts {
-		opt(svc)
-	}
-
-	return svc, nil
+	return &validator, nil
 }
 
 // TokenVerification verifies the incoming token request
 // right now we are supporting the admin token, the k8s /login token from cloud-api and the new keycloak token
 // TODO: remove support for k8s cloud-api /login and the admin token
-func (svc *Service) TokenVerification(r *http.Request) (jwt.MapClaims, error) {
+func (svc *Validator) Validate(r *http.Request) (jwt.MapClaims, error) {
 	ctx := r.Context()
 	token := jwtauth.TokenFromHeader(r)
 	// Empty Token return unauthorized error
@@ -121,16 +93,4 @@ func (svc *Service) TokenVerification(r *http.Request) (jwt.MapClaims, error) {
 		}
 	}
 	return nil, errors.ErrUnauthorized
-}
-
-func (svc *Service) AuthCodeURL(state string, opts ...oauth2.AuthCodeOption) string {
-	return svc.oauth2Config.AuthCodeURL(state, opts...)
-}
-
-func (svc *Service) Exchange(ctx context.Context, code string, opts ...oauth2.AuthCodeOption) (*oauth2.Token, error) {
-	return svc.oauth2Config.Exchange(ctx, code, opts...)
-}
-
-func (svc *Service) Verify(ctx context.Context, rawIDToken string) (*oidc.IDToken, error) {
-	return svc.verifier.Verify(ctx, rawIDToken)
 }
