@@ -16,8 +16,8 @@ import (
 type ValidatorOption func(validator *Validator)
 
 type ValidatorConfig struct {
-	ClientID string `split_words:"true" required:"true"`
-	ConnURL  string `split_words:"true" required:"true"`
+	ClientID      string `split_words:"true" required:"true"`
+	ConnectionURL string `split_words:"true" required:"true"`
 }
 
 type Validator struct {
@@ -33,7 +33,7 @@ func JWTClientValidatorOpt(signingKey string) ValidatorOption {
 }
 
 func NewValidator(cfg ValidatorConfig, opts ...ValidatorOption) (*Validator, error) {
-	provider, err := oidc.NewProvider(context.Background(), cfg.ConnURL)
+	provider, err := oidc.NewProvider(context.Background(), cfg.ConnectionURL)
 	if err != nil {
 		return nil, err
 	}
