@@ -7,7 +7,7 @@ import (
 	"net/http"
 
 	"github.com/coreos/go-oidc"
-	"github.com/go-chi/jwtauth"
+	"github.com/go-chi/jwtauth/v5"
 	"github.com/golang-jwt/jwt"
 
 	"github.com/unanet/go/pkg/errors"
@@ -87,11 +87,9 @@ func (svc *Validator) Validate(r *http.Request) (jwt.MapClaims, error) {
 			}
 			return nil, errors.NewRestError(http.StatusUnauthorized, fmt.Sprintf("Unauthorized: %s", err.Error()))
 		}
-		if ct == nil || !ct.Valid {
-			return nil, errors.ErrInvalidToken
-		}
-		if tokenClaims, ok := ct.Claims.(jwt.MapClaims); ok {
-			return tokenClaims, nil
+
+		if claims, err := ct.AsMap(ctx); err == nil {
+			return claims, nil
 		} else {
 			return nil, errors.ErrMapTokenClaims
 		}
