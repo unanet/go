@@ -98,7 +98,6 @@ func (l *LogWriterConstructor) NewLogWriter(r *http.Request) LogWriter {
 
 	if reqID := log.GetReqID(r.Context()); reqID != "" {
 		logFields = append(logFields, zap.String("req_id", reqID))
-		incomingRequestFields = append(incomingRequestFields, zap.String("req_id", reqID))
 	}
 
 	entry := &LogEntry{
