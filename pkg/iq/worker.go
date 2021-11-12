@@ -94,7 +94,7 @@ func NewInstanceQ(instanceName string, sess *session.Session, c *Config) (*Insta
 	var subscriptions []string
 	var policies []interface{}
 
-	log.Logger.Debug("subscribe Q ARns", zap.String("arn", qarn))
+	log.Logger.Debug("subscribe Q ARns", zap.String("qarn", qarn), zap.Strings("topic_arns", c.TopicARNs))
 
 	for _, x := range c.TopicARNs {
 		log.Logger.Debug("subscription to topic ARns", zap.String("arn", x))
