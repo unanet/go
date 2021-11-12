@@ -35,8 +35,8 @@ const (
 )
 
 type Config struct {
-	Prefix                 string   `split_words:"true"`
-	TopicArns              []string `split_words:"true" default:""`
+	Prefix                 string   `split_words:"true" required:"true"`
+	TopicArns              []string `split_words:"true" required:"true"`
 	MaxNumberOfMessages    int64    `split_words:"true" default:"10"`
 	WaitTimeSecond         int64    `split_words:"true" default:"20"`
 	VisibilityTimeout      int64    `split_words:"true" default:"3600"`
