@@ -106,6 +106,7 @@ func NewInstanceQ(instanceName string, sess *session.Session, c *Config) (*Insta
 		})
 		if err != nil {
 			log.Logger.Error("failed to subscribe to topic", zap.String("topic", x), zap.String("iq", qarn), zap.Error(err))
+			return nil, err
 		} else {
 			subscriptions = append(subscriptions, *r.SubscriptionArn)
 			policies = append(policies, getSqsPolicy(qarn, x))
