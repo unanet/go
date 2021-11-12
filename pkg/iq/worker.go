@@ -101,7 +101,7 @@ func NewInstanceQ(instanceName string, sess *session.Session, c *Config) (*Insta
 			TopicArn: aws.String(x),
 		})
 		if err != nil {
-			log.Logger.Error("failed to subscribe to topic", zap.String("topic", x), zap.String("iq", qarn))
+			log.Logger.Error("failed to subscribe to topic", zap.String("topic", x), zap.String("iq", qarn), zap.Error(err))
 		} else {
 			subscriptions = append(subscriptions, *r.SubscriptionArn)
 			policies = append(policies, getSqsPolicy(qarn, x))
@@ -112,7 +112,7 @@ func NewInstanceQ(instanceName string, sess *session.Session, c *Config) (*Insta
 		"Statement": policies,
 	})
 	if err != nil {
-		log.Logger.Error("failed to marshal sqs policies")
+		log.Logger.Error("failed to marshal sqs policies", zap.Error(err))
 	}
 
 	_, err = sqss.SetQueueAttributes(&sqs.SetQueueAttributesInput{
@@ -122,7 +122,7 @@ func NewInstanceQ(instanceName string, sess *session.Session, c *Config) (*Insta
 		QueueUrl: result.QueueUrl,
 	})
 	if err != nil {
-		log.Logger.Error("failed to set sqs policy")
+		log.Logger.Error("failed to set sqs policy", zap.Error(err))
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
