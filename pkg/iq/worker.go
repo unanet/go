@@ -124,7 +124,7 @@ func NewInstanceQ(instanceName string, sess *session.Session, c *Config) (*Insta
 		QueueUrl: result.QueueUrl,
 	})
 	if err != nil {
-		log.Logger.Error("failed to set sqs policy", zap.Error(err), zap.String("policy", policy), zap.String("queue_url", result.QueueUrl))
+		log.Logger.Error("failed to set sqs policy", zap.Error(err), zap.String("policy", policy))
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
