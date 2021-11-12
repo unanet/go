@@ -94,7 +94,11 @@ func NewInstanceQ(instanceName string, sess *session.Session, c *Config) (*Insta
 	var subscriptions []string
 	var policies []interface{}
 
+	log.Logger.Debug("subscribe Q ARns", zap.String("arn", qarn))
+
 	for _, x := range c.TopicARNs {
+		log.Logger.Debug("subscription to topic ARns", zap.String("arn", x))
+
 		r, err := snss.Subscribe(&sns.SubscribeInput{
 			Endpoint: aws.String(qarn),
 			Protocol: aws.String("sqs"),
@@ -107,6 +111,8 @@ func NewInstanceQ(instanceName string, sess *session.Session, c *Config) (*Insta
 			policies = append(policies, getSqsPolicy(qarn, x))
 		}
 	}
+
+	log.Logger.Debug("queue policies", zap.Any("policies", policies))
 
 	b, err := gjson.Marshal(map[string]interface{}{
 		"Statement": policies,
