@@ -77,6 +77,9 @@ func (svc *Validator) Validate(r *http.Request) (jwt.MapClaims, error) {
 		if goErrors.Is(verr, jwtauth.ErrExpired) {
 			return nil, errors.ErrExpired
 		}
+
+		fmt.Println(verr)
+
 	} else {
 		var idTokenClaims = new(jwt.MapClaims)
 		if err := keyCloakToken.Claims(&idTokenClaims); err != nil {
