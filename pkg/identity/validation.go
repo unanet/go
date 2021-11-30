@@ -68,6 +68,8 @@ func (svc *Validator) Validate(r *http.Request) (jwt.MapClaims, error) {
 	if verr != nil {
 		if goErrors.Is(verr, jwtauth.ErrExpired) {
 			return nil, errors.ErrExpired
+		} else {
+			return nil, verr
 		}
 	} else {
 		var idTokenClaims = new(jwt.MapClaims)
