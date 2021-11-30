@@ -16,8 +16,13 @@ import (
 type ValidatorOption func(validator *Validator)
 
 type ValidatorConfig struct {
-	ClientID      string `split_words:"true" required:"true"`
-	ConnectionURL string `split_words:"true" required:"true"`
+	ClientID          string `split_words:"true" required:"true"`
+	ConnectionURL     string `split_words:"true" required:"true"`
+
+	// Optional Skip Checks
+	SkipClientIDCheck bool   `split_words:"true" default:"false"`
+	SkipExpiryCheck   bool   `split_words:"true" default:"false"`
+	SkipIssuerCheck   bool   `split_words:"true" default:"false"`
 }
 
 type Validator struct {
@@ -40,7 +45,10 @@ func NewValidator(cfg ValidatorConfig, opts ...ValidatorOption) (*Validator, err
 
 	validator := Validator{
 		verifier: provider.Verifier(&oidc.Config{
-			ClientID: cfg.ClientID,
+			ClientID:          cfg.ClientID,
+			SkipClientIDCheck: cfg.SkipClientIDCheck,
+			SkipExpiryCheck:   cfg.SkipExpiryCheck,
+			SkipIssuerCheck:   cfg.SkipIssuerCheck,
 		}),
 	}
 
@@ -68,8 +76,6 @@ func (svc *Validator) Validate(r *http.Request) (jwt.MapClaims, error) {
 	if verr != nil {
 		if goErrors.Is(verr, jwtauth.ErrExpired) {
 			return nil, errors.ErrExpired
-		} else {
-			return nil, verr
 		}
 	} else {
 		var idTokenClaims = new(jwt.MapClaims)
