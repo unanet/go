@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/coreos/go-oidc"
+	"github.com/coreos/go-oidc/v3/oidc"
 	"github.com/go-chi/jwtauth/v5"
 	"github.com/golang-jwt/jwt"
 
@@ -16,13 +16,14 @@ import (
 type ValidatorOption func(validator *Validator)
 
 type ValidatorConfig struct {
-	ClientID          string `split_words:"true" required:"true"`
-	ConnectionURL     string `split_words:"true" required:"true"`
+	ClientID      string `split_words:"true" required:"true"`
+	ConnectionURL string `split_words:"true" required:"true"`
+	Issuer        string `split_words:"true" required:"false"`
 
 	// Optional Skip Checks
-	SkipClientIDCheck bool   `split_words:"true" default:"false"`
-	SkipExpiryCheck   bool   `split_words:"true" default:"false"`
-	SkipIssuerCheck   bool   `split_words:"true" default:"false"`
+	SkipClientIDCheck bool `split_words:"true" default:"false"`
+	SkipExpiryCheck   bool `split_words:"true" default:"false"`
+	SkipIssuerCheck   bool `split_words:"true" default:"false"`
 }
 
 type Validator struct {
@@ -38,7 +39,14 @@ func JWTClientValidatorOpt(signingKey string) ValidatorOption {
 }
 
 func NewValidator(cfg ValidatorConfig, opts ...ValidatorOption) (*Validator, error) {
-	provider, err := oidc.NewProvider(context.Background(), cfg.ConnectionURL)
+	ctx := context.Background()
+	if cfg.Issuer != "" {
+		// this allows you to manually set the issuer when the connection url is
+		// an internal url (needed for hitting the endpoint in side the same cluster in k8s
+		ctx = oidc.InsecureIssuerURLContext(ctx, cfg.Issuer)
+	}
+
+	provider, err := oidc.NewProvider(ctx, cfg.ConnectionURL)
 	if err != nil {
 		return nil, err
 	}
