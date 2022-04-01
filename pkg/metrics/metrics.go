@@ -42,7 +42,7 @@ var (
 		prometheus.HistogramOpts{
 			Name:    "http_request_duration_seconds",
 			Help:    "time spent processing an http request in seconds",
-			Buckets: prometheus.ExponentialBuckets(0.1, 2, 18),
+			Buckets: prometheus.ExponentialBuckets(0.01, 1.6, 20),
 		}, []string{"method", "protocol", "path"})
 )
 
