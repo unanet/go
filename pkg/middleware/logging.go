@@ -56,7 +56,7 @@ func (l *LogEntry) Write(status, bytes int, header http.Header, elapsed time.Dur
 	outgoingResponseFields := []zap.Field{
 		zap.Int("status", status),
 		zap.Int("resp_bytes_length", bytes),
-		zap.Float64("elapsed_ms", float64(elapsed.Nanoseconds())/1000000.0),
+		zap.Float64("elapsed", elapsed.Seconds()),
 	}
 
 	if l.logger.Core().Enabled(zap.DebugLevel) {
