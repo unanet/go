@@ -1,6 +1,7 @@
 package log
 
 import (
+	"context"
 	"os"
 	"strings"
 
@@ -17,6 +18,14 @@ func init() {
 	if hostname == "" || err != nil {
 		hostname = "localhost"
 	}
+
+	var c Config
+	configErr := envconfig.Process("", &c)
+	Logger = newLogger(c.LogLevel)
+	if configErr != nil {
+		Logger.Error("Logger Config failed to Load", zap.Error(configErr))
+	}
+	Logger.Info("Logger Initialized", zap.String("level", c.LogLevel))
 }
 
 var (
@@ -109,12 +118,11 @@ func newLogger(ll string) *zap.Logger {
 	return logger.With(zap.String("hostname", hostname))
 }
 
-func init() {
-	var c Config
-	configErr := envconfig.Process("", &c)
-	Logger = newLogger(c.LogLevel)
-	if configErr != nil {
-		Logger.Error("Logger Config failed to Load", zap.Error(configErr))
+func LoggerFromReqID(ctx context.Context) *zap.Logger {
+	reqID := GetReqID(ctx)
+	if len(reqID) > 0 {
+		return Logger.With(zap.String("req_id", reqID))
+	} else {
+		return Logger
 	}
-	Logger.Info("Logger Initialized", zap.String("level", c.LogLevel))
 }
