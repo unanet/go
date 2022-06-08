@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"context"
 	goErrors "errors"
 	"net/http"
 
@@ -18,6 +19,13 @@ func init() {
 				render.Status(r, restError.Code)
 				LogFromRequest(r).Debug("Known Internal Server Error", zap.Error(err))
 				render.DefaultResponder(w, r, restError)
+				return
+			}
+
+			if goErrors.As(err, &context.Canceled) {
+				contextCancelledError := errors.RestError{Code: 444, Message: "Context Cancelled", OriginalError: err}
+				LogFromRequest(r).Warn("Context Cancelled", zap.Error(err))
+				render.DefaultResponder(w, r, contextCancelledError)
 				return
 			}
 
