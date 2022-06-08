@@ -24,7 +24,7 @@ func init() {
 
 			if goErrors.As(err, &context.Canceled) {
 				contextCancelledError := errors.RestError{Code: 444, Message: "Context Cancelled", OriginalError: err}
-				LogFromRequest(r).Warn("Context Cancelled", zap.Error(err))
+				LogFromRequest(r).Info("Context Cancelled", zap.Error(err))
 				render.DefaultResponder(w, r, contextCancelledError)
 				return
 			}
