@@ -30,7 +30,7 @@ func extractRoles(ctx context.Context, claims jwt.MapClaims) []interface{} {
 	return []interface{}{}
 }
 
-func authenticationMiddleware(adminToken string, idv *identity.Validator, enforcer *casbin.Enforcer) func(http.Handler) http.Handler {
+func AuthenticationMiddleware(adminToken string, idv *identity.Validator, enforcer *casbin.Enforcer) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		hfn := func(w http.ResponseWriter, r *http.Request) {
 			ctx := r.Context()
