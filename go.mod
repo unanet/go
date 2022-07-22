@@ -4,6 +4,7 @@ go 1.15
 
 require (
 	github.com/aws/aws-sdk-go v1.27.0
+	github.com/casbin/casbin/v2 v2.1.2
 	github.com/coreos/go-oidc/v3 v3.1.0
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.0.0 // indirect
 	github.com/go-chi/chi v4.1.0+incompatible
