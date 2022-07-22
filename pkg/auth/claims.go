@@ -2,6 +2,7 @@ package auth
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/golang-jwt/jwt"
 )
@@ -24,4 +25,13 @@ func Claims(ctx context.Context) jwt.MapClaims {
 
 func CtxWithClaims(ctx context.Context, claims jwt.MapClaims) context.Context {
 	return context.WithValue(ctx, jwtClaimsID, claims)
+}
+
+func Sub(ctx context.Context) string {
+	c := Claims(ctx)
+	if val, ok := c["sub"]; ok {
+		return fmt.Sprintf("%v", val)
+	}
+
+	return "unknown"
 }
