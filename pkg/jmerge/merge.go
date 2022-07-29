@@ -40,17 +40,36 @@ func merge(dst, src interface{}, depth int) interface{} {
 	if dv.Kind() == reflect.Slice && dv.Kind() == sv.Kind() {
 		srcSlice := toSlice(sv)
 		destSlice := toSlice(dv)
+		if len(srcSlice) == 0 {
+			return dst
+		}
+
 		for i := 0; i < len(srcSlice); i++ {
-			if len(destSlice) >= i+1 {
-				destSlice[i] = cRecursion(destSlice[i], srcSlice[i], depth)
+			srcName := getName(srcSlice[i])
+			// this is mapping based on a name property in the map if it exists
+			if len(srcName) > 0 {
+				if d := findDestMapInSliceByName(srcName, destSlice); d != nil {
+					d = cRecursion(d, srcSlice[i], depth)
+				} else {
+					destSlice = append(destSlice, srcSlice[i])
+				}
+				// if the name property doesn't exist we just append the src to the array
 			} else {
 				destSlice = append(destSlice, srcSlice[i])
 			}
 		}
 		return destSlice
 	}
-
 	return dst
+}
+
+func findDestMapInSliceByName(name string, destSlice []interface{}) interface{} {
+	for i := 0; i < len(destSlice); i++ {
+		if getName(destSlice[i]) == name {
+			return destSlice[i]
+		}
+	}
+	return nil
 }
 
 func toMap(value reflect.Value) map[string]interface{} {
@@ -67,4 +86,16 @@ func toSlice(value reflect.Value) []interface{} {
 		s[i] = value.Index(i).Interface()
 	}
 	return s
+}
+
+func getName(value interface{}) string {
+	rv := reflect.ValueOf(value)
+	if rv.Kind() == reflect.Map {
+		if val, ok := toMap(rv)["name"]; ok {
+			return val.(string)
+		} else {
+			return ""
+		}
+	}
+	return ""
 }

@@ -1,0 +1,8 @@
+{
+  "spec": {
+    "key1": "bar",
+    "key2": [
+      "hahaha"
+    ]
+  }
+}

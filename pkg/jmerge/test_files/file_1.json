@@ -1,0 +1,10 @@
+{
+  "spec": {
+    "key1": "foo",
+    "key2": [
+      "value1",
+      "value2",
+      "value3"
+    ]
+  }
+}
