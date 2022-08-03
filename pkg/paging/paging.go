@@ -27,7 +27,7 @@ func GetParameters(ctx context.Context) *Parameters {
 }
 
 type Cursor struct {
-	IntID     *int64     `json:"int_id"`
+	IntID     *uint64    `json:"int_id"`
 	CreatedAt *time.Time `json:"created_at"`
 	UUID      *uuid.UUID `json:"uuid"`
 }
@@ -40,7 +40,7 @@ func (c Cursor) String() string {
 	return base64.URLEncoding.EncodeToString(b)
 }
 
-func NewParameters(limit int64, cursor *Cursor, w http.ResponseWriter) Parameters {
+func NewParameters(limit uint64, cursor *Cursor, w http.ResponseWriter) Parameters {
 	return Parameters{
 		Limit:  limit,
 		Cursor: cursor,
@@ -49,12 +49,12 @@ func NewParameters(limit int64, cursor *Cursor, w http.ResponseWriter) Parameter
 }
 
 type Parameters struct {
-	Limit  int64   `json:"limit"`
+	Limit  uint64  `json:"limit"`
 	Cursor *Cursor `json:"cursor"`
 	w      http.ResponseWriter
 }
 
-func (p Parameters) SetIntCursor(id int64) {
+func (p Parameters) SetIntCursor(id uint64) {
 	p.w.Header().Add(
 		"x-paging-cursor",
 		Cursor{IntID: &id}.String(),
