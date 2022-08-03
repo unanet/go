@@ -7,7 +7,7 @@ import (
 
 type ctxKeyMessaging int
 
-const MessagingKeyID ctxKeyMessaging = 0
+const ContextKeyID ctxKeyMessaging = 0
 
 type M struct {
 	messages []string
@@ -35,7 +35,7 @@ func getMessenger(ctx context.Context) Messenger {
 		return nil
 	}
 
-	if m, ok := ctx.Value(MessagingKeyID).(Messenger); ok {
+	if m, ok := ctx.Value(ContextKeyID).(Messenger); ok {
 		return m
 	}
 
