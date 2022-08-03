@@ -21,13 +21,20 @@ func Paging(next http.Handler) http.Handler {
 			render.Respond(w, r, err)
 			return
 		}
-		ctx = context.WithValue(ctx, paging.ContextKeyID, &pp)
-		defer func() {
-			w.Header().Add(
-				"x-paging-cursor",
-				pp.Cursor.String(),
-			)
-		}()
+		if pp != nil {
+			ctx = context.WithValue(ctx, paging.ContextKeyID, &pp)
+			defer func() {
+				if pp.Cursor == nil {
+					return
+				}
+
+				w.Header().Add(
+					"x-paging-cursor",
+					pp.Cursor.String(),
+				)
+			}()
+		}
+
 		next.ServeHTTP(w, r.WithContext(ctx))
 
 	}
