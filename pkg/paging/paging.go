@@ -40,7 +40,7 @@ func (c Cursor) String() string {
 	return base64.URLEncoding.EncodeToString(b)
 }
 
-func NewParameters(limit int, cursor *Cursor, w http.ResponseWriter) Parameters {
+func NewParameters(limit int64, cursor *Cursor, w http.ResponseWriter) Parameters {
 	return Parameters{
 		Limit:  limit,
 		Cursor: cursor,
@@ -49,7 +49,7 @@ func NewParameters(limit int, cursor *Cursor, w http.ResponseWriter) Parameters 
 }
 
 type Parameters struct {
-	Limit  int     `json:"limit"`
+	Limit  int64   `json:"limit"`
 	Cursor *Cursor `json:"cursor"`
 	w      http.ResponseWriter
 }
