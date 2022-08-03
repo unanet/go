@@ -13,40 +13,25 @@ import (
 	"github.com/unanet/go/pkg/paging"
 )
 
-func Paging(next http.Handler) http.Handler {
+func Paging(next http.Handler, defaultLimit int) http.Handler {
 	fn := func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
-		pp, err := pageParameters(r)
+		pp, err := pageParameters(r, w, defaultLimit)
 		if err != nil {
 			render.Respond(w, r, err)
 			return
 		}
 
 		ctx = context.WithValue(ctx, paging.ContextKeyID, &pp)
-		defer func() {
-			if pp.Cursor == nil {
-				return
-			}
-
-			w.Header().Add(
-				"x-paging-cursor",
-				pp.Cursor.String(),
-			)
-		}()
-
 		next.ServeHTTP(w, r.WithContext(ctx))
-
 	}
 	return http.HandlerFunc(fn)
 }
 
-func pageParameters(r *http.Request) (paging.Parameters, error) {
+func pageParameters(r *http.Request, w http.ResponseWriter, defaultLimit int) (paging.Parameters, error) {
 	limit := r.URL.Query().Get("limit")
 	if limit == "" {
-		return paging.Parameters{
-			Limit:  100,
-			Cursor: nil,
-		}, nil
+		return paging.NewParameters(defaultLimit, nil, w), nil
 	}
 
 	limitInt, err := strconv.Atoi(limit)
@@ -56,10 +41,7 @@ func pageParameters(r *http.Request) (paging.Parameters, error) {
 
 	cursor := r.URL.Query().Get("cursor")
 	if cursor == "" {
-		return paging.Parameters{
-			Limit:  limitInt,
-			Cursor: nil,
-		}, nil
+		return paging.NewParameters(limitInt, nil, w), nil
 	} else {
 		bcursor, err := base64.StdEncoding.DecodeString(cursor)
 		if err != nil {
@@ -71,10 +53,7 @@ func pageParameters(r *http.Request) (paging.Parameters, error) {
 			return paging.Parameters{}, errors.BadRequest("invalid cursor query parameter")
 		}
 
-		return paging.Parameters{
-			Limit:  limitInt,
-			Cursor: &dcursor,
-		}, nil
+		return paging.NewParameters(limitInt, &dcursor, w), nil
 	}
 
 }
