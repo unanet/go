@@ -13,19 +13,21 @@ import (
 	"github.com/unanet/go/pkg/paging"
 )
 
-func Paging(next http.Handler, defaultLimit int) http.Handler {
-	fn := func(w http.ResponseWriter, r *http.Request) {
-		ctx := r.Context()
-		pp, err := pageParameters(r, w, defaultLimit)
-		if err != nil {
-			render.Respond(w, r, err)
-			return
-		}
+func Paging(defaultLimit int) func(next http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		fn := func(w http.ResponseWriter, r *http.Request) {
+			ctx := r.Context()
+			pp, err := pageParameters(r, w, defaultLimit)
+			if err != nil {
+				render.Respond(w, r, err)
+				return
+			}
 
-		ctx = context.WithValue(ctx, paging.ContextKeyID, &pp)
-		next.ServeHTTP(w, r.WithContext(ctx))
+			ctx = context.WithValue(ctx, paging.ContextKeyID, &pp)
+			next.ServeHTTP(w, r.WithContext(ctx))
+		}
+		return http.HandlerFunc(fn)
 	}
-	return http.HandlerFunc(fn)
 }
 
 func pageParameters(r *http.Request, w http.ResponseWriter, defaultLimit int) (paging.Parameters, error) {
