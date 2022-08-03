@@ -3,6 +3,7 @@ module github.com/unanet/go
 go 1.15
 
 require (
+	github.com/Masterminds/squirrel v1.5.3
 	github.com/aws/aws-sdk-go v1.27.0
 	github.com/casbin/casbin/v2 v2.1.2
 	github.com/coreos/go-oidc/v3 v3.1.0

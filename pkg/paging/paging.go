@@ -27,7 +27,7 @@ func GetParameters(ctx context.Context) *Parameters {
 }
 
 type Cursor struct {
-	IntID     *uint64    `json:"int_id"`
+	IntID     *int       `json:"int_id"`
 	CreatedAt *time.Time `json:"created_at"`
 	UUID      *uuid.UUID `json:"uuid"`
 }
@@ -54,7 +54,7 @@ type Parameters struct {
 	w      http.ResponseWriter
 }
 
-func (p Parameters) SetIntCursor(id uint64) {
+func (p Parameters) SetIntCursor(id int) {
 	p.w.Header().Add(
 		"x-paging-cursor",
 		Cursor{IntID: &id}.String(),
