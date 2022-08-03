@@ -21,19 +21,18 @@ func Paging(next http.Handler) http.Handler {
 			render.Respond(w, r, err)
 			return
 		}
-		if pp != nil {
-			ctx = context.WithValue(ctx, paging.ContextKeyID, &pp)
-			defer func() {
-				if pp.Cursor == nil {
-					return
-				}
 
-				w.Header().Add(
-					"x-paging-cursor",
-					pp.Cursor.String(),
-				)
-			}()
-		}
+		ctx = context.WithValue(ctx, paging.ContextKeyID, &pp)
+		defer func() {
+			if pp.Cursor == nil {
+				return
+			}
+
+			w.Header().Add(
+				"x-paging-cursor",
+				pp.Cursor.String(),
+			)
+		}()
 
 		next.ServeHTTP(w, r.WithContext(ctx))
 
@@ -41,10 +40,10 @@ func Paging(next http.Handler) http.Handler {
 	return http.HandlerFunc(fn)
 }
 
-func pageParameters(r *http.Request) (*paging.Parameters, error) {
+func pageParameters(r *http.Request) (paging.Parameters, error) {
 	limit := r.URL.Query().Get("limit")
 	if limit == "" {
-		return &paging.Parameters{
+		return paging.Parameters{
 			Limit:  100,
 			Cursor: nil,
 		}, nil
@@ -52,27 +51,27 @@ func pageParameters(r *http.Request) (*paging.Parameters, error) {
 
 	limitInt, err := strconv.Atoi(limit)
 	if err != nil {
-		return nil, errors.BadRequest("limit query parameter must be an int")
+		return paging.Parameters{}, errors.BadRequest("limit query parameter must be an int")
 	}
 
 	cursor := r.URL.Query().Get("cursor")
 	if cursor == "" {
-		return &paging.Parameters{
+		return paging.Parameters{
 			Limit:  limitInt,
 			Cursor: nil,
 		}, nil
 	} else {
 		bcursor, err := base64.StdEncoding.DecodeString(cursor)
 		if err != nil {
-			return nil, errors.BadRequest("invalid cursor query parameter")
+			return paging.Parameters{}, errors.BadRequest("invalid cursor query parameter")
 		}
 		dcursor := paging.Cursor{}
 		err = json.Unmarshal(bcursor, &dcursor)
 		if err != nil {
-			return nil, errors.BadRequest("invalid cursor query parameter")
+			return paging.Parameters{}, errors.BadRequest("invalid cursor query parameter")
 		}
 
-		return &paging.Parameters{
+		return paging.Parameters{
 			Limit:  limitInt,
 			Cursor: &dcursor,
 		}, nil
