@@ -48,8 +48,8 @@ func merge(dst, src interface{}, depth int) interface{} {
 			srcName := getName(srcSlice[i])
 			// this is mapping based on a name property in the map if it exists
 			if len(srcName) > 0 {
-				if d := findDestMapInSliceByName(srcName, destSlice); d != nil {
-					d = cRecursion(d, srcSlice[i], depth)
+				if di := findDestMapIndexInSliceByName(srcName, destSlice); di != -1 {
+					destSlice[di] = cRecursion(destSlice[di], srcSlice[i], depth)
 				} else {
 					destSlice = append(destSlice, srcSlice[i])
 				}
@@ -63,13 +63,13 @@ func merge(dst, src interface{}, depth int) interface{} {
 	return dst
 }
 
-func findDestMapInSliceByName(name string, destSlice []interface{}) interface{} {
+func findDestMapIndexInSliceByName(name string, destSlice []interface{}) int {
 	for i := 0; i < len(destSlice); i++ {
 		if getName(destSlice[i]) == name {
-			return destSlice[i]
+			return i
 		}
 	}
-	return nil
+	return -1
 }
 
 func toMap(value reflect.Value) map[string]interface{} {

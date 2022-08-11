@@ -1,0 +1,65 @@
+{
+  "kind": "Deployment",
+  "spec": {
+    "replicas": 2,
+    "selector": {
+      "matchLabels": {
+        "app": "{{ .Manifest.Name }}"
+      }
+    },
+    "strategy": {
+      "type": "RollingUpdate",
+      "rollingUpdate": {
+        "maxSurge": "25%",
+        "maxUnavailable": "25%"
+      }
+    },
+    "template": {
+      "spec": {
+        "dnsPolicy": "ClusterFirst",
+        "containers": [
+          {
+            "env": "{{ metadata_key_value_list `default` }}",
+            "name": "{{ .Manifest.Name }}",
+            "image": "{{ .Manifest.FormattedImageNameWithTag }}",
+            "imagePullPolicy": "Always"
+          }
+        ],
+        "restartPolicy": "Always",
+        "schedulerName": "default-scheduler",
+        "serviceAccount": "unanet",
+        "imagePullSecrets": [
+          {
+            "name": "docker-cfg"
+          }
+        ],
+        "serviceAccountName": "unanet",
+        "terminationGracePeriodSeconds": 60
+      },
+      "metadata": {
+        "labels": {
+          "eve.unanet.io/nuance": "{{ nuance }}",
+          "app.kubernetes.io/name": "{{ .Manifest.Name }}",
+          "app.kubernetes.io/version": "{{ .Manifest.AvailableVersion }}",
+          "app.kubernetes.io/instance": "{{ .Manifest.Name }}-{{ nuance }}"
+        }
+      }
+    },
+    "progressDeadlineSeconds": 600
+  },
+  "metadata": {
+    "name": "{{ .Manifest.Name }}",
+    "labels": {
+      "app.kubernetes.io/name": "{{ .Manifest.Name }}",
+      "app.kubernetes.io/version": "{{ .Manifest.AvailableVersion }}",
+      "app.kubernetes.io/instance": "{{ .Manifest.Name }}-{{ nuance }}"
+    },
+    "namespace": "{{ .Namespace.Name }}",
+    "annotations": {
+      "eve.unanet.io/monitor-pod": "true",
+      "eve.unanet.io/monitor-pod-labels": "app.kubernetes.io/name={{ .Manifest.Name }},app.kubernetes.io/version={{ .Manifest.AvailableVersion }},eve.unanet.io/nuance={{ nuance }}",
+      "eve.unanet.io/monitor-pod-timeout": "2m"
+    }
+  },
+  "apiVersion": "apps/v1"
+}

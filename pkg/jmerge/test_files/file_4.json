@@ -1,0 +1,25 @@
+{
+  "kind": "Deployment",
+  "spec": {
+    "template": {
+      "spec": {
+        "containers": [
+          {
+            "name": "{{ .Manifest.Name }}",
+            "ports": [
+              {
+                "name": "http",
+                "protocol": "TCP",
+                "containerPort": "{{ metadata `eve_service_port` | to_number }}"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "metadata": {
+    "name": "{{ .Manifest.Name }}"
+  },
+  "apiVersion": "apps/v1"
+}

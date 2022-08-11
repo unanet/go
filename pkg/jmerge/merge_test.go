@@ -15,13 +15,13 @@ func PrettyPrint(m interface{}) {
 }
 
 func TestMerge(t *testing.T) {
-	b1, err := os.ReadFile("./test_files/file_1.json")
+	b1, err := os.ReadFile("./test_files/file_3.json")
 	require.NoError(t, err)
 	var map1 = make(map[string]interface{})
 	err = json.Unmarshal(b1, &map1)
 	require.NoError(t, err)
 
-	b2, err := os.ReadFile("./test_files/file_2.json")
+	b2, err := os.ReadFile("./test_files/file_4.json")
 	require.NoError(t, err)
 	var map2 = make(map[string]interface{})
 	err = json.Unmarshal(b2, &map2)
