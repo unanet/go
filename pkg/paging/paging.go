@@ -23,7 +23,9 @@ func GetParameters(ctx context.Context) *Parameters {
 		return m
 	}
 
-	return nil
+	// this use case gets hit when middleware isn't being used/set unit tests as well
+	p := NewParameters(1000, nil, nil)
+	return &p
 }
 
 type Cursor struct {
