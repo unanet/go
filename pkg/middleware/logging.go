@@ -5,7 +5,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"time"
 
@@ -40,10 +39,12 @@ func RequestLogger(f LogConstructor) func(next http.Handler) http.Handler {
 			ww := middleware.NewWrapResponseWriter(w, r.ProtoMajor)
 			w.Header().Add(log.RequestIDHeader, log.GetReqID(r.Context()))
 			t1 := time.Now()
-			buffer := bytes.NewBuffer([]byte{})
-			ww.Tee(buffer)
+			buffer := &limitedRW{limit: 1024 * 512}
+			if log.Logger.Core().Enabled(zap.DebugLevel) {
+				ww.Tee(buffer)
+			}
 			defer func() {
-				entry.Write(ww.Status(), ww.BytesWritten(), ww.Header(), time.Since(t1), ioutil.NopCloser(buffer))
+				entry.Write(ww.Status(), ww.BytesWritten(), ww.Header(), time.Since(t1), io.NopCloser(buffer))
 			}()
 
 			next.ServeHTTP(ww, WithLogEntry(r, entry))
@@ -123,4 +124,24 @@ func Log(ctx context.Context) *zap.Logger {
 	} else {
 		return log.Logger
 	}
+}
+
+type limitedRW struct {
+	size  int
+	limit int
+	buf   bytes.Buffer
+}
+
+func (l *limitedRW) Write(b []byte) (int, error) {
+	if l.size >= l.limit {
+		return len(b), nil
+	}
+
+	n, err := l.buf.Write(b)
+	l.size += n
+	return n, err
+}
+
+func (l *limitedRW) Read(b []byte) (int, error) {
+	return l.buf.Read(b)
 }
