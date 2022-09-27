@@ -5,7 +5,6 @@
       "spec": {
         "containers": [
           {
-            "name": "{{ .Manifest.Name }}",
             "ports": [
               {
                 "name": "http",

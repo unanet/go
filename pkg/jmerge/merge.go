@@ -57,7 +57,11 @@ func merge(dst, src interface{}, depth int) interface{} {
 				}
 				// if the name property doesn't exist we just append the src to the array
 			} else {
-				destSlice = append(destSlice, srcSlice[i])
+				if len(destSlice) >= i+1 {
+					destSlice[i] = cRecursion(destSlice[i], srcSlice[i], depth)
+				} else {
+					destSlice = append(destSlice, srcSlice[i])
+				}
 			}
 		}
 		return destSlice
