@@ -5,6 +5,7 @@
       "spec": {
         "containers": [
           {
+            "name": "blah",
             "ports": [
               {
                 "name": "http",

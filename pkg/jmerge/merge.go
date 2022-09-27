@@ -51,7 +51,11 @@ func merge(dst, src interface{}, depth int) interface{} {
 				if di := findDestMapIndexInSliceByName(srcName, destSlice); di != -1 {
 					destSlice[di] = cRecursion(destSlice[di], srcSlice[i], depth)
 				} else if len(destSlice) >= i+1 {
-					destSlice[i] = cRecursion(destSlice[i], srcSlice[i], depth)
+					if len(getName(destSlice[i])) > 0 {
+						destSlice = append(destSlice, srcSlice[i])
+					} else {
+						destSlice[i] = cRecursion(destSlice[i], srcSlice[i], depth)
+					}
 				} else {
 					destSlice = append(destSlice, srcSlice[i])
 				}

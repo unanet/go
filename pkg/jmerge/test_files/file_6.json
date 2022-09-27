@@ -1,0 +1,14 @@
+{
+  "kind": "Deployment",
+  "spec": {
+    "template": {
+      "spec": {
+        "containers": [
+          {
+            "name": "blah"
+          }
+        ]
+      }
+    }
+  }
+}
