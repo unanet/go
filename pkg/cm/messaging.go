@@ -54,6 +54,6 @@ func Message(ctx context.Context, format string, a ...interface{}) {
 	if x := getMessenger(ctx); x == nil {
 		return
 	} else {
-		x.Message(format, a)
+		x.Message(format, a...)
 	}
 }
