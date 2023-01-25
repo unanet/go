@@ -203,15 +203,15 @@ func (worker *InstanceQ) cleanup() {
 			QueueUrl: aws.String(worker.qurl),
 		})
 		if err != nil {
-			worker.log.Error("error unsubscribing from SNS Topic", zap.Error(err), zap.String("qurl", worker.qurl))
+			worker.log.Error("error deleting SQS Topic", zap.Error(err), zap.String("qurl", worker.qurl))
 		}
 	}
 }
 
 func (worker *InstanceQ) Stop() {
 	worker.cancel()
-	worker.cleanup()
 	<-worker.done
+	worker.cleanup()
 }
 
 func (worker *InstanceQ) run(h Handler, mCtx []*mContext) {
