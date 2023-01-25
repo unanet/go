@@ -188,23 +188,30 @@ func (worker *InstanceQ) Start(h Handler) {
 func (worker *InstanceQ) cleanup() {
 	if worker.sns != nil {
 		for _, x := range worker.subscriptions {
-			_, _ = worker.sns.Unsubscribe(&sns.UnsubscribeInput{
+			worker.log.Info("unsubscribing from SNS Topic", zap.String("subscription", x))
+			if _, err := worker.sns.Unsubscribe(&sns.UnsubscribeInput{
 				SubscriptionArn: aws.String(x),
-			})
+			}); err != nil {
+				worker.log.Error("error unsubscribing from SNS Topic", zap.Error(err), zap.String("subscription", x))
+			}
 		}
 	}
 
 	if worker.sqs != nil {
-		_, _ = worker.sqs.DeleteQueue(&sqs.DeleteQueueInput{
+		worker.log.Info("deleting SQS Queue", zap.String("name", worker.qurl))
+		_, err := worker.sqs.DeleteQueue(&sqs.DeleteQueueInput{
 			QueueUrl: aws.String(worker.qurl),
 		})
+		if err != nil {
+			worker.log.Error("error unsubscribing from SNS Topic", zap.Error(err), zap.String("qurl", worker.qurl))
+		}
 	}
 }
 
 func (worker *InstanceQ) Stop() {
 	worker.cancel()
-	<-worker.done
 	worker.cleanup()
+	<-worker.done
 }
 
 func (worker *InstanceQ) run(h Handler, mCtx []*mContext) {
