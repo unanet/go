@@ -40,7 +40,7 @@ type Config struct {
 	MaxNumberOfMessages    int64    `split_words:"true" default:"10"`
 	WaitTimeSecond         int64    `split_words:"true" default:"20"`
 	VisibilityTimeout      int64    `split_words:"true" default:"3600"`
-	DeliveryDelay          int64    `split_words:"true" default:"10"`
+	DeliveryDelay          int64    `split_words:"true" default:"0"`
 	MessageRetentionPeriod int64    `split_words:"true" default:"3600"`
 	HandlerTimeout         int64    `split_words:"true" default:"60"`
 }
