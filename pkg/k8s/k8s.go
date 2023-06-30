@@ -1,14 +1,10 @@
 package k8s
 
 import (
-	"os"
-	"path/filepath"
-
+	"github.com/unanet/go/pkg/errors"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
-
-	"github.com/unanet/go/pkg/errors"
 )
 
 func GetInClusterK8sClient() (*kubernetes.Clientset, error) {
@@ -25,19 +21,10 @@ func GetInClusterK8sClient() (*kubernetes.Clientset, error) {
 	return client, nil
 }
 
-func homeDir() string {
-	if h := os.Getenv("HOME"); h != "" {
-		return h
-	}
-
-	return os.Getenv("USERPROFILE") // windows
-}
-
 func GetLocalConfigK8sClient() (*kubernetes.Clientset, error) {
-	configFile := filepath.Join(homeDir(), ".kube", "config")
-
 	// use the current context in kubeconfig
-	config, err := clientcmd.BuildConfigFromFlags("", configFile)
+	config, err := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(clientcmd.NewDefaultClientConfigLoadingRules(),
+		&clientcmd.ConfigOverrides{}).ClientConfig()
 	if err != nil {
 		return nil, err
 	}
