@@ -81,10 +81,10 @@ func getInstanceID(instanceName string) string {
 	}
 }
 
-func (q *InstanceQ) createQ() error {
+func (q *InstanceQ) createQ(ctx context.Context) error {
 	instanceID := getInstanceID(q.name)
 
-	result, err := q.sqs.CreateQueue(&sqs.CreateQueueInput{
+	result, err := q.sqs.CreateQueueWithContext(ctx, &sqs.CreateQueueInput{
 		QueueName: aws.String(fmt.Sprintf("%s_srv-%s", q.c.Prefix, q.name)),
 		Attributes: map[string]*string{
 			"DelaySeconds":           aws.String(fmt.Sprint(q.c.DeliveryDelay)),
@@ -100,7 +100,7 @@ func (q *InstanceQ) createQ() error {
 		return err
 	}
 
-	qAttrs, err := q.sqs.GetQueueAttributes(&sqs.GetQueueAttributesInput{
+	qAttrs, err := q.sqs.GetQueueAttributesWithContext(ctx, &sqs.GetQueueAttributesInput{
 		AttributeNames: aws.StringSlice([]string{"QueueArn"}),
 		QueueUrl:       result.QueueUrl,
 	})
@@ -118,7 +118,7 @@ func (q *InstanceQ) createQ() error {
 	for _, x := range q.c.TopicArns {
 		log.Logger.Debug("subscription to topic ARns", zap.String("arn", x))
 
-		r, err := q.sns.Subscribe(&sns.SubscribeInput{
+		r, err := q.sns.SubscribeWithContext(ctx, &sns.SubscribeInput{
 			Endpoint: aws.String(qarn),
 			Protocol: aws.String("sqs"),
 			TopicArn: aws.String(x),
@@ -143,7 +143,7 @@ func (q *InstanceQ) createQ() error {
 
 	policy := string(b)
 
-	_, err = q.sqs.SetQueueAttributes(&sqs.SetQueueAttributesInput{
+	_, err = q.sqs.SetQueueAttributesWithContext(ctx, &sqs.SetQueueAttributesInput{
 		Attributes: map[string]*string{
 			"Policy": aws.String(policy),
 		},
@@ -160,10 +160,14 @@ func (q *InstanceQ) createQ() error {
 	return nil
 }
 
-func (q *InstanceQ) Start(h Handler) {
-	ctx, cancel := context.WithCancel(context.Background())
-	q.ctx = ctx
-	q.cancel = cancel
+func (q *InstanceQ) Start(ctx context.Context, h Handler) error {
+	if err := q.createQ(ctx); err != nil {
+		return err
+	}
+
+	cctx, ccancel := context.WithCancel(context.Background())
+	q.ctx = cctx
+	q.cancel = ccancel
 
 	go func() {
 		q.log.Info("instance queue worker started")
