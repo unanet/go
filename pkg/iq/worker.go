@@ -60,33 +60,52 @@ type InstanceQ struct {
 }
 
 func NewInstanceQ(instanceName string, sess *session.Session, c *Config) (*InstanceQ, error) {
-	sqss := sqs.New(sess)
-	snss := sns.New(sess)
+	w := InstanceQ{
+		name: instanceName,
+		log:  log.Logger.With(zap.String("worker", instanceName)),
+		c:    c,
+		sqs:  sqs.New(sess),
+		sns:  sns.New(sess),
+		done: make(chan bool),
+	}
 
-	instanceID := getInstanceID(instanceName)
+	return &w, nil
+}
 
-	result, err := sqss.CreateQueue(&sqs.CreateQueueInput{
-		QueueName: aws.String(fmt.Sprintf("%s_srv-%s", c.Prefix, instanceName)),
+func getInstanceID(instanceName string) string {
+	splitInstanceName := strings.Split(instanceName, "-")
+	if len(splitInstanceName) > 2 {
+		return splitInstanceName[len(splitInstanceName)-2]
+	} else {
+		return "0000000000"
+	}
+}
+
+func (q *InstanceQ) createQ() error {
+	instanceID := getInstanceID(q.name)
+
+	result, err := q.sqs.CreateQueue(&sqs.CreateQueueInput{
+		QueueName: aws.String(fmt.Sprintf("%s_srv-%s", q.c.Prefix, q.name)),
 		Attributes: map[string]*string{
-			"DelaySeconds":           aws.String(fmt.Sprint(c.DeliveryDelay)),
-			"VisibilityTimeout":      aws.String(fmt.Sprint(c.VisibilityTimeout)),
-			"MessageRetentionPeriod": aws.String(fmt.Sprint(c.MessageRetentionPeriod)),
+			"DelaySeconds":           aws.String(fmt.Sprint(q.c.DeliveryDelay)),
+			"VisibilityTimeout":      aws.String(fmt.Sprint(q.c.VisibilityTimeout)),
+			"MessageRetentionPeriod": aws.String(fmt.Sprint(q.c.MessageRetentionPeriod)),
 		},
 		Tags: map[string]*string{
-			"Prefix":     aws.String(c.Prefix),
+			"Prefix":     aws.String(q.c.Prefix),
 			"InstanceID": aws.String(instanceID),
 		},
 	})
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	qAttrs, err := sqss.GetQueueAttributes(&sqs.GetQueueAttributesInput{
+	qAttrs, err := q.sqs.GetQueueAttributes(&sqs.GetQueueAttributesInput{
 		AttributeNames: aws.StringSlice([]string{"QueueArn"}),
 		QueueUrl:       result.QueueUrl,
 	})
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	qarn := *qAttrs.Attributes["QueueArn"]
@@ -94,19 +113,19 @@ func NewInstanceQ(instanceName string, sess *session.Session, c *Config) (*Insta
 	var subscriptions []string
 	var policies []interface{}
 
-	log.Logger.Debug("subscribe Q ARns", zap.String("qarn", qarn), zap.Strings("topic_arns", c.TopicArns))
+	log.Logger.Debug("subscribe Q ARns", zap.String("qarn", qarn), zap.Strings("topic_arns", q.c.TopicArns))
 
-	for _, x := range c.TopicArns {
+	for _, x := range q.c.TopicArns {
 		log.Logger.Debug("subscription to topic ARns", zap.String("arn", x))
 
-		r, err := snss.Subscribe(&sns.SubscribeInput{
+		r, err := q.sns.Subscribe(&sns.SubscribeInput{
 			Endpoint: aws.String(qarn),
 			Protocol: aws.String("sqs"),
 			TopicArn: aws.String(x),
 		})
 		if err != nil {
 			log.Logger.Error("failed to subscribe to topic", zap.String("topic", x), zap.String("iq", qarn), zap.Error(err))
-			return nil, err
+			return err
 		} else {
 			subscriptions = append(subscriptions, *r.SubscriptionArn)
 			policies = append(policies, getSqsPolicy(qarn, x))
@@ -124,7 +143,7 @@ func NewInstanceQ(instanceName string, sess *session.Session, c *Config) (*Insta
 
 	policy := string(b)
 
-	_, err = sqss.SetQueueAttributes(&sqs.SetQueueAttributesInput{
+	_, err = q.sqs.SetQueueAttributes(&sqs.SetQueueAttributesInput{
 		Attributes: map[string]*string{
 			"Policy": aws.String(policy),
 		},
@@ -134,101 +153,85 @@ func NewInstanceQ(instanceName string, sess *session.Session, c *Config) (*Insta
 		log.Logger.Error("failed to set sqs policy", zap.Error(err), zap.String("policy", policy))
 	}
 
+	q.subscriptions = subscriptions
+	q.qurl = *result.QueueUrl
+	q.qarn = qarn
+
+	return nil
+}
+
+func (q *InstanceQ) Start(h Handler) {
 	ctx, cancel := context.WithCancel(context.Background())
-	w := InstanceQ{
-		name:          instanceName,
-		log:           log.Logger.With(zap.String("worker", instanceName)),
-		c:             c,
-		ctx:           ctx,
-		cancel:        cancel,
-		sqs:           sqss,
-		sns:           snss,
-		subscriptions: subscriptions,
-		qurl:          *result.QueueUrl,
-		qarn:          qarn,
-		done:          make(chan bool),
-	}
+	q.ctx = ctx
+	q.cancel = cancel
 
-	return &w, nil
-}
-
-func getInstanceID(instanceName string) string {
-	splitInstanceName := strings.Split(instanceName, "-")
-	if len(splitInstanceName) > 2 {
-		return splitInstanceName[len(splitInstanceName)-2]
-	} else {
-		return "0000000000"
-	}
-}
-
-func (worker *InstanceQ) Start(h Handler) {
 	go func() {
-		worker.log.Info("instance queue worker started")
+		q.log.Info("instance queue worker started")
 		for {
 			select {
-			case <-worker.ctx.Done():
-				worker.log.Info("instance queue worker stopped")
-				close(worker.done)
+			case <-q.ctx.Done():
+				q.log.Info("instance queue worker stopped")
+				close(q.done)
 				return
 			default:
 				ctx := context.Background()
-				m, err := worker.receive(ctx)
+				m, err := q.receive(ctx)
 				if err != nil {
-					worker.log.Panic("error receiving message from queue", zap.Error(err))
+					q.log.Panic("error receiving message from queue", zap.Error(err))
 				}
 				if len(m) == 0 {
 					continue
 				}
-				worker.run(h, m)
+				q.run(h, m)
 			}
 		}
 	}()
 }
 
-func (worker *InstanceQ) cleanup() {
-	if worker.sns != nil {
-		for _, x := range worker.subscriptions {
-			worker.log.Info("unsubscribing from SNS Topic", zap.String("subscription", x))
-			if _, err := worker.sns.Unsubscribe(&sns.UnsubscribeInput{
+func (q *InstanceQ) cleanup() {
+	if q.sns != nil {
+		for _, x := range q.subscriptions {
+			q.log.Info("unsubscribing from SNS Topic", zap.String("subscription", x))
+			if _, err := q.sns.Unsubscribe(&sns.UnsubscribeInput{
 				SubscriptionArn: aws.String(x),
 			}); err != nil {
-				worker.log.Error("error unsubscribing from SNS Topic", zap.Error(err), zap.String("subscription", x))
+				q.log.Error("error unsubscribing from SNS Topic", zap.Error(err), zap.String("subscription", x))
 			}
 		}
 	}
 
-	if worker.sqs != nil {
-		worker.log.Info("deleting SQS Queue", zap.String("name", worker.qurl))
-		_, err := worker.sqs.DeleteQueue(&sqs.DeleteQueueInput{
-			QueueUrl: aws.String(worker.qurl),
+	if q.sqs != nil {
+		q.log.Info("deleting SQS Queue", zap.String("name", q.qurl))
+		_, err := q.sqs.DeleteQueue(&sqs.DeleteQueueInput{
+			QueueUrl: aws.String(q.qurl),
 		})
 		if err != nil {
-			worker.log.Error("error deleting SQS Topic", zap.Error(err), zap.String("qurl", worker.qurl))
+			q.log.Error("error deleting SQS Topic", zap.Error(err), zap.String("qurl", q.qurl))
 		}
 	}
 }
 
-func (worker *InstanceQ) Stop() {
-	worker.cancel()
-	<-worker.done
-	worker.cleanup()
+func (q *InstanceQ) Stop() {
+	q.cancel()
+	<-q.done
+	q.cleanup()
 }
 
-func (worker *InstanceQ) run(h Handler, mCtx []*mContext) {
+func (q *InstanceQ) run(h Handler, mCtx []*mContext) {
 	numMessages := len(mCtx)
 	var wg sync.WaitGroup
 	wg.Add(numMessages)
 	for _, mc := range mCtx {
 		go func(m *mContext) {
-			ctx, cancel := context.WithTimeout(m.ctx, time.Duration(worker.c.HandlerTimeout)*time.Second)
+			ctx, cancel := context.WithTimeout(m.ctx, time.Duration(q.c.HandlerTimeout)*time.Second)
 			defer cancel()
 			defer wg.Done()
 			if err := h.HandleMessage(ctx, &m.M); err != nil {
-				worker.log.Error("error handling message", zap.Error(err))
+				q.log.Error("error handling message", zap.Error(err))
 			} else {
-				err = worker.deleteMessage(m.ctx, &m.M)
+				err = q.deleteMessage(m.ctx, &m.M)
 				if err != nil {
-					worker.log.Error("error deleting message", zap.Error(err))
+					q.log.Error("error deleting message", zap.Error(err))
 				}
 			}
 		}(mc)
@@ -236,21 +239,21 @@ func (worker *InstanceQ) run(h Handler, mCtx []*mContext) {
 	wg.Wait()
 }
 
-func (worker *InstanceQ) logWith(ctx context.Context) *zap.Logger {
-	return worker.log.With(zap.String("req_id", log.GetReqID(ctx)))
+func (q *InstanceQ) logWith(ctx context.Context) *zap.Logger {
+	return q.log.With(zap.String("req_id", log.GetReqID(ctx)))
 }
 
-func (worker *InstanceQ) receive(ctx context.Context) ([]*mContext, error) {
+func (q *InstanceQ) receive(ctx context.Context) ([]*mContext, error) {
 	awsM := sqs.ReceiveMessageInput{
 		MessageAttributeNames: []*string{
 			aws.String(sqs.QueueAttributeNameAll),
 		},
-		QueueUrl:            aws.String(worker.qurl),
-		MaxNumberOfMessages: aws.Int64(worker.c.MaxNumberOfMessages),
-		VisibilityTimeout:   aws.Int64(worker.c.VisibilityTimeout),
-		WaitTimeSeconds:     aws.Int64(worker.c.WaitTimeSecond),
+		QueueUrl:            aws.String(q.qurl),
+		MaxNumberOfMessages: aws.Int64(q.c.MaxNumberOfMessages),
+		VisibilityTimeout:   aws.Int64(q.c.VisibilityTimeout),
+		WaitTimeSeconds:     aws.Int64(q.c.WaitTimeSecond),
 	}
-	result, err := worker.sqs.ReceiveMessage(&awsM)
+	result, err := q.sqs.ReceiveMessage(&awsM)
 	if err != nil {
 		if strings.HasPrefix(err.Error(), "RequestCanceled") {
 			return nil, nil
@@ -287,7 +290,7 @@ func (worker *InstanceQ) receive(ctx context.Context) ([]*mContext, error) {
 			M:   m,
 			ctx: mctx,
 		})
-		worker.logWith(mctx).Info("notification message received",
+		q.logWith(mctx).Info("notification message received",
 			zap.Any("id", m.ID),
 		)
 	}
@@ -295,16 +298,16 @@ func (worker *InstanceQ) receive(ctx context.Context) ([]*mContext, error) {
 	return returnMs, nil
 }
 
-func (worker *InstanceQ) deleteMessage(ctx context.Context, m *M) error {
+func (q *InstanceQ) deleteMessage(ctx context.Context, m *M) error {
 	now := time.Now()
-	_, err := worker.sqs.DeleteMessageWithContext(ctx, &sqs.DeleteMessageInput{
-		QueueUrl:      aws.String(worker.qurl),
+	_, err := q.sqs.DeleteMessageWithContext(ctx, &sqs.DeleteMessageInput{
+		QueueUrl:      aws.String(q.qurl),
 		ReceiptHandle: aws.String(m.ReceiptHandle),
 	})
 	if err != nil {
 		return errors.Wrap(err)
 	}
-	worker.logWith(ctx).Info("notification message deleted",
+	q.logWith(ctx).Info("notification message deleted",
 		zap.Float64("elapsed_ms", float64(time.Since(now).Nanoseconds())/1000000.0),
 		zap.Any("id", m.ID),
 	)
