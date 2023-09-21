@@ -190,6 +190,8 @@ func (q *InstanceQ) Start(ctx context.Context, h Handler) error {
 			}
 		}
 	}()
+
+	return nil
 }
 
 func (q *InstanceQ) cleanup() {
