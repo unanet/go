@@ -28,6 +28,7 @@ type M struct {
 	ReceiptHandle string
 	Body          map[string]interface{}
 	ID            string
+	RawBody       []byte
 }
 
 type mContext struct {

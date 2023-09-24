@@ -284,6 +284,7 @@ func (q *InstanceQ) receive(ctx context.Context) ([]*mContext, error) {
 			ID:            *x.MessageId,
 			Notification:  n,
 			Body:          body,
+			RawBody:       []byte(n.Body),
 			ReceiptHandle: *x.ReceiptHandle,
 		}
 		var mctx context.Context
