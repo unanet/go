@@ -3,7 +3,6 @@ package identity
 import (
 	"context"
 	goErrors "errors"
-	"fmt"
 	"net/http"
 
 	"github.com/coreos/go-oidc/v3/oidc"
@@ -27,21 +26,14 @@ type ValidatorConfig struct {
 }
 
 type Validator struct {
-	jwtAuth  *jwtauth.JWTAuth // Used for Legacy login route
 	verifier *oidc.IDTokenVerifier
-}
-
-func JWTClientValidatorOpt(signingKey string) ValidatorOption {
-	return func(v *Validator) {
-		v.jwtAuth = jwtauth.New(jwt.SigningMethodHS256.Alg(), []byte(signingKey), nil)
-	}
 }
 
 func NewValidator(cfg ValidatorConfig, opts ...ValidatorOption) (*Validator, error) {
 	ctx := context.Background()
 	if cfg.Issuer != "" {
 		// this allows you to manually set the issuer when the connection url is
-		// an internal url (needed for hitting the endpoint in side the same cluster in k8s
+		// an internal url (needed for hitting the endpoint inside the same cluster in k8s
 		ctx = oidc.InsecureIssuerURLContext(ctx, cfg.Issuer)
 	}
 
@@ -66,9 +58,7 @@ func NewValidator(cfg ValidatorConfig, opts ...ValidatorOption) (*Validator, err
 	return &validator, nil
 }
 
-// TokenVerification verifies the incoming token request
-// right now we are supporting the admin token, the k8s /login token from cloud-api and the new keycloak token
-// TODO: remove support for k8s cloud-api /login and the admin token
+// Validate verifies the incoming token request
 func (svc *Validator) Validate(r *http.Request) (jwt.MapClaims, error) {
 	ctx := r.Context()
 	token := jwtauth.TokenFromHeader(r)
@@ -78,7 +68,7 @@ func (svc *Validator) Validate(r *http.Request) (jwt.MapClaims, error) {
 	}
 
 	// Attempt to verify the token again OIDC provider (Keycloak via Okta auth) first
-	// If its a valid token (no error) return immediately
+	// If it's a valid token (no error) return immediately
 	keyCloakToken, verr := svc.verifier.Verify(ctx, token)
 	if verr != nil {
 		if goErrors.Is(verr, jwtauth.ErrExpired) {
@@ -92,22 +82,5 @@ func (svc *Validator) Validate(r *http.Request) (jwt.MapClaims, error) {
 		return *idTokenClaims, nil
 	}
 
-	// Attempt to verify the token against cloud-api /login route for k8s tokens
-	// TODO: eventually remove this when everything is using Keycloak instead of /login route in cloud-api
-	if svc.jwtAuth != nil {
-		ct, err := jwtauth.VerifyRequest(svc.jwtAuth, r, jwtauth.TokenFromHeader)
-		if err != nil {
-			if goErrors.Is(err, jwtauth.ErrExpired) {
-				return nil, errors.ErrExpired
-			}
-			return nil, errors.NewRestError(http.StatusUnauthorized, fmt.Sprintf("Unauthorized: %s", err.Error()))
-		}
-
-		if claims, err := ct.AsMap(ctx); err == nil {
-			return claims, nil
-		} else {
-			return nil, errors.ErrMapTokenClaims
-		}
-	}
 	return nil, errors.ErrUnauthorized
 }
