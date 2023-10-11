@@ -7,13 +7,12 @@ require (
 	github.com/casbin/casbin/v2 v2.1.2
 	github.com/coreos/go-oidc/v3 v3.1.0
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.0.0 // indirect
-	github.com/go-chi/chi v4.1.0+incompatible
+	github.com/go-chi/chi/v5 v5.0.4
 	github.com/go-chi/jwtauth/v5 v5.0.2
 	github.com/go-chi/render v1.0.1
 	github.com/go-ozzo/ozzo-validation/v4 v4.3.0
 	github.com/goccy/go-json v0.7.9 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
-	github.com/golang-jwt/jwt v3.2.1+incompatible
 	github.com/golang-jwt/jwt/v5 v5.0.0
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/lestrrat-go/jwx v1.2.7 // indirect
