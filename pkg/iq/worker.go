@@ -14,8 +14,8 @@ import (
 	"github.com/aws/aws-sdk-go/service/sqs"
 	"go.uber.org/zap"
 
-	"github.com/unanet/go/pkg/errors"
-	"github.com/unanet/go/pkg/log"
+	"github.com/unanet/go/v2/pkg/errors"
+	"github.com/unanet/go/v2/pkg/log"
 )
 
 // HandlerFunc is used to define the Handler that is run on for each message

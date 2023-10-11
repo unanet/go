@@ -6,7 +6,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/unanet/go/pkg/log"
+	"github.com/unanet/go/v2/pkg/log"
 )
 
 var letters = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")

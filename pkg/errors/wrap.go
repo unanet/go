@@ -26,7 +26,7 @@ func Wrap(err error, args ...interface{}) error {
 	} else {
 		if len(args) == 0 {
 			return errors.Wrap(err, err.Error())
-		} else if len(args) == 1  {
+		} else if len(args) == 1 {
 			return errors.Wrap(err, fmt.Sprintf("%v", args[0]))
 		} else {
 			return errors.Wrap(err, fmt.Sprintf(fmt.Sprintf("%v", args[0]), args[1:]...))

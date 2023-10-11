@@ -5,16 +5,16 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/unanet/go/pkg/auth"
+	"github.com/unanet/go/v2/pkg/auth"
 
 	"github.com/casbin/casbin/v2"
 	"github.com/go-chi/jwtauth/v5"
 	"github.com/go-chi/render"
-	"github.com/golang-jwt/jwt"
+	"github.com/golang-jwt/jwt/v5"
 	"go.uber.org/zap"
 
-	"github.com/unanet/go/pkg/errors"
-	"github.com/unanet/go/pkg/identity"
+	"github.com/unanet/go/v2/pkg/errors"
+	"github.com/unanet/go/v2/pkg/identity"
 )
 
 func extractRoles(ctx context.Context, claims jwt.MapClaims) []interface{} {

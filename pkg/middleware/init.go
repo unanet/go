@@ -8,7 +8,7 @@ import (
 	"github.com/go-chi/render"
 	"go.uber.org/zap"
 
-	"github.com/unanet/go/pkg/errors"
+	"github.com/unanet/go/v2/pkg/errors"
 )
 
 func init() {

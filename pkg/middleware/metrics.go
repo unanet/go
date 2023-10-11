@@ -5,9 +5,10 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/go-chi/chi"
-	"github.com/go-chi/chi/middleware"
-	"github.com/unanet/go/pkg/metrics"
+	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
+
+	"github.com/unanet/go/v2/pkg/metrics"
 )
 
 // Metrics adapts the incoming request with Logging/Metrics

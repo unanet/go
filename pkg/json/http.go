@@ -7,7 +7,7 @@ import (
 
 	validation "github.com/go-ozzo/ozzo-validation/v4"
 
-	"github.com/unanet/go/pkg/errors"
+	"github.com/unanet/go/v2/pkg/errors"
 )
 
 func ParseBody(r *http.Request, model interface{}) error {

@@ -6,7 +6,7 @@ import (
 
 	"go.uber.org/zap"
 
-	"github.com/unanet/go/pkg/log"
+	"github.com/unanet/go/v2/pkg/log"
 )
 
 // Transport implements http.RoundTripper. When set as Transport of http.Client, it executes HTTP requests with logging.

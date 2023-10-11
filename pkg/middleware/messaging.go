@@ -4,7 +4,7 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/unanet/go/pkg/cm"
+	"github.com/unanet/go/v2/pkg/cm"
 )
 
 func Messaging(next http.Handler) http.Handler {

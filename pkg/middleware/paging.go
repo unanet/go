@@ -9,8 +9,8 @@ import (
 
 	"github.com/go-chi/render"
 
-	"github.com/unanet/go/pkg/errors"
-	"github.com/unanet/go/pkg/paging"
+	"github.com/unanet/go/v2/pkg/errors"
+	"github.com/unanet/go/v2/pkg/paging"
 )
 
 func Paging(defaultLimit uint64) func(next http.Handler) http.Handler {

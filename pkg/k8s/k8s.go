@@ -1,7 +1,7 @@
 package k8s
 
 import (
-	"github.com/unanet/go/pkg/errors"
+	"github.com/unanet/go/v2/pkg/errors"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"

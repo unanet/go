@@ -1,4 +1,4 @@
-module github.com/unanet/go
+module github.com/unanet/go/v2
 
 go 1.15
 
@@ -14,6 +14,7 @@ require (
 	github.com/goccy/go-json v0.7.9 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang-jwt/jwt v3.2.1+incompatible
+	github.com/golang-jwt/jwt/v5 v5.0.0
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/lestrrat-go/jwx v1.2.7 // indirect
 	github.com/pkg/errors v0.9.1

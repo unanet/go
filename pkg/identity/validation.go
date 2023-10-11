@@ -8,9 +8,9 @@ import (
 
 	"github.com/coreos/go-oidc/v3/oidc"
 	"github.com/go-chi/jwtauth/v5"
-	"github.com/golang-jwt/jwt"
+	"github.com/golang-jwt/jwt/v5"
 
-	"github.com/unanet/go/pkg/errors"
+	"github.com/unanet/go/v2/pkg/errors"
 )
 
 type ValidatorOption func(validator *Validator)
@@ -27,7 +27,6 @@ type ValidatorConfig struct {
 }
 
 type Validator struct {
-	// TODO: Remove after apps are migrated from legacy /login route
 	jwtAuth  *jwtauth.JWTAuth // Used for Legacy login route
 	verifier *oidc.IDTokenVerifier
 }
