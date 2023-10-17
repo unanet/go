@@ -3,6 +3,7 @@ package identity
 import (
 	"context"
 	goErrors "errors"
+	"fmt"
 	"net/http"
 
 	"github.com/coreos/go-oidc/v3/oidc"
@@ -26,7 +27,14 @@ type ValidatorConfig struct {
 }
 
 type Validator struct {
+	jwtAuth  *jwtauth.JWTAuth
 	verifier *oidc.IDTokenVerifier
+}
+
+func JWTClientValidatorOpt(signingKey string) ValidatorOption {
+	return func(v *Validator) {
+		v.jwtAuth = jwtauth.New(jwt.SigningMethodHS256.Alg(), []byte(signingKey), nil)
+	}
 }
 
 func NewValidator(cfg ValidatorConfig, opts ...ValidatorOption) (*Validator, error) {
@@ -80,6 +88,22 @@ func (svc *Validator) Validate(r *http.Request) (jwt.MapClaims, error) {
 			return nil, errors.ErrMapTokenClaims
 		}
 		return *idTokenClaims, nil
+	}
+
+	if svc.jwtAuth != nil {
+		ct, err := jwtauth.VerifyRequest(svc.jwtAuth, r, jwtauth.TokenFromHeader)
+		if err != nil {
+			if goErrors.Is(err, jwtauth.ErrExpired) {
+				return nil, errors.ErrExpired
+			}
+			return nil, errors.NewRestError(http.StatusUnauthorized, fmt.Sprintf("Unauthorized: %s", err.Error()))
+		}
+
+		if claims, err := ct.AsMap(ctx); err == nil {
+			return claims, nil
+		} else {
+			return nil, errors.ErrMapTokenClaims
+		}
 	}
 
 	return nil, errors.ErrUnauthorized
