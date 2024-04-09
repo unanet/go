@@ -17,6 +17,8 @@ var (
 	Version = "unknown"
 	// Date is the day/time (UTC) the build was created
 	Date = "unknown"
+	// Go Version used to Build the source
+	GoVersion = "unknown"
 	// Prerelease the name of a possible release candidate, ex: 2.1.0-rc.1, 1.0.0-alpha, 3.3.0-beta
 	// note: only supply the prelease name here (rc.1, alpha, beta, etc.)
 	// Prerelease is suffixed onto the Version
